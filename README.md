@@ -106,9 +106,7 @@ XhinkingTodo-rust/
 ├── scripts/                      # 工具脚本
 │   └── sync-version.cjs         # 版本号同步脚本
 ├── tools-temp/                   # 临时工具（开发用）
-│   ├── generate_icns.py         # macOS 图标生成
-│   ├── generate_ico.py          # Windows 图标生成
-│   └── generate_icons.py        # 通用图标生成
+│   └── generate_ico.py          # 通用图标生成
 ├── package.json                 # Node.js 配置
 ├── tsconfig.json                # TypeScript 配置
 ├── tailwind.config.js           # TailwindCSS 配置
