@@ -1,6 +1,6 @@
 # XhinkingTodo
 
-一个默认隐藏（边缘停靠）的现代化桌面待办管理应用，待办支持多个时间节点，基于 Tauri + Rust + React 构建。
+一个默认隐藏（边缘停靠）的现代化桌面待办管理应用，待办项支持颜色标签和多个时间节点，基于 Tauri + Rust + React 构建。
 
 ![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
