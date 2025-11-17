@@ -1,6 +1,6 @@
 # XhinkingTodo
 
-一个现代化的桌面待办事项应用，基于 Tauri + Rust + React 构建。
+一个默认隐藏（边缘停靠）的现代化桌面待办管理应用，基于 Tauri + Rust + React 构建。
 
 ![Version](https://img.shields.io/badge/version-0.8.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
@@ -15,7 +15,7 @@
 - 🔍 **快速搜索**：实时搜索待办内容
 
 ### 窗口管理
-- 📌 **边缘停靠**：吸附到屏幕边缘，自动隐藏
+- 📌 **默认边缘停靠**：吸附到屏幕边缘，自动隐藏
 - 🎨 **彩带指示器**：折叠时显示彩虹滚动指示器
 - 🖱️ **悬停展开**：鼠标悬停自动展开窗口
 - 📏 **记住尺寸**：自动保存和恢复窗口大小位置
