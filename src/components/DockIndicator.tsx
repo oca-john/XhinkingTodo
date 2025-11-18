@@ -7,26 +7,31 @@ interface DockIndicatorProps {
 }
 
 function DockIndicator({ edge, onHover, onLeave }: DockIndicatorProps) {
-  // 渐变颜色：红 -> 黄 -> 蓝 -> 绿
-  const gradientColors = [
+  // 渐变颜色：红 -> 绿 -> 蓝（三原色）
+  const baseColors = [
     "#FF0000", // 红（0%）
-    "#FFFF00", // 黄（25%）
-    "#0000FF", // 蓝（50%）
-    "#00FF00", // 绿（75%）
+    "#00FF00", // 绿（33.33%）
+    "#0000FF", // 蓝（66.67%）
   ];
 
-  // 创建渐变，首尾用相同的红色实现无缝衔接
+  // 根据边缘位置决定颜色顺序
+  // 右边：红→绿→蓝（自下而上）
+  // 上边：蓝→绿→红（自左向右，翻转后的效果）
+  const gradientColors = edge === "Right" ? baseColors : [...baseColors].reverse();
+
+  // 创建渐变，首尾用相同颜色实现无缝衔接
   const createGradient = () => {
     const direction = edge === "Right" ? "to bottom" : "to right";
     const colorStops = gradientColors
       .map((color, index) => {
-        const position = (index * 25); // 每个颜色占25%
-        return `${color} ${position}%`;
+        const position = (index * 100 / 3); // 每个颜色占33.33%
+        return `${color} ${position.toFixed(2)}%`;
       })
       .join(", ");
     
-    // 添加100%位置的红色，与0%位置完全相同
-    return `linear-gradient(${direction}, ${colorStops}, #FF0000 100%)`;
+    // 添加100%位置的颜色，与0%位置完全相同，实现循环
+    const loopColor = gradientColors[0];
+    return `linear-gradient(${direction}, ${colorStops}, ${loopColor} 100%)`;
   };
 
   // 容器样式：固定定位，填充整个窗口

@@ -91,6 +91,7 @@ fn main() {
             undock_window,
             collapse_to_edge,
             expand_from_edge,
+            is_mouse_in_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

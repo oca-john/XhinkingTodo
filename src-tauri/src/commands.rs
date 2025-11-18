@@ -580,3 +580,38 @@ pub fn expand_from_edge(
     
     Ok(())
 }
+
+#[tauri::command]
+pub fn is_mouse_in_window(window: Window) -> Result<bool, String> {
+    // 获取窗口位置和大小
+    let window_pos = window.outer_position()
+        .map_err(|e| format!("Failed to get window position: {}", e))?;
+    let window_size = window.outer_size()
+        .map_err(|e| format!("Failed to get window size: {}", e))?;
+    
+    // 获取鼠标位置
+    #[cfg(target_os = "windows")]
+    {
+        use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
+        use windows::Win32::Foundation::POINT;
+        
+        unsafe {
+            let mut point = POINT { x: 0, y: 0 };
+            if GetCursorPos(&mut point).is_ok() {
+                let mouse_x = point.x;
+                let mouse_y = point.y;
+                
+                // 检查鼠标是否在窗口范围内
+                let in_window = mouse_x >= window_pos.x 
+                    && mouse_x < window_pos.x + window_size.width as i32
+                    && mouse_y >= window_pos.y 
+                    && mouse_y < window_pos.y + window_size.height as i32;
+                
+                return Ok(in_window);
+            }
+        }
+    }
+    
+    // 其他平台默认返回false
+    Ok(false)
+}

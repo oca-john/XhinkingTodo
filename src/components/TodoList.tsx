@@ -4,6 +4,7 @@ import { TodoItem, TodoGroup, Language, ColorTag, TimeNode } from "../types";
 import { t } from "../i18n";
 import TodoItemComponent from "./TodoItem";
 import TodoCreator from "./TodoCreator";
+import { api } from "../services/api";
 
 interface TodoListProps {
   todos: TodoItem[];
@@ -31,6 +32,8 @@ function TodoList({
   onDeleteTodo,
 }: TodoListProps) {
   const [isCreating, setIsCreating] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
 
   const handleCreate = (data: {
     title: string;
@@ -45,6 +48,78 @@ function TodoList({
 
   const handleCancel = () => {
     setIsCreating(false);
+  };
+
+  // 拖拽处理函数
+  const handleDragStart = (todoId: string) => {
+    console.log('Drag start:', todoId);
+    setDraggedId(todoId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, todoId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedId && draggedId !== todoId) {
+      setDragOverId(todoId);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverId(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    console.log('Drop:', { draggedId, targetId });
+    
+    if (!draggedId || draggedId === targetId) {
+      setDraggedId(null);
+      setDragOverId(null);
+      return;
+    }
+
+    // 按order排序获取当前顺序
+    const sortedTodos = [...todos].sort((a, b) => a.order - b.order);
+    
+    // 找到拖动的todo和目标位置的索引
+    const draggedIndex = sortedTodos.findIndex(t => t.id === draggedId);
+    const targetIndex = sortedTodos.findIndex(t => t.id === targetId);
+    
+    if (draggedIndex === -1 || targetIndex === -1) {
+      console.error('Invalid drag operation');
+      setDraggedId(null);
+      setDragOverId(null);
+      return;
+    }
+
+    // 移动元素
+    const [draggedTodo] = sortedTodos.splice(draggedIndex, 1);
+    sortedTodos.splice(targetIndex, 0, draggedTodo);
+
+    // 获取新的ID顺序
+    const newOrderIds = sortedTodos.map(todo => todo.id);
+    console.log('New order:', newOrderIds);
+
+    try {
+      // 调用API保存新顺序
+      await api.reorderTodos(newOrderIds);
+      // 刷新数据
+      window.location.reload();
+    } catch (error) {
+      console.error("Failed to reorder todos:", error);
+    }
+
+    setDraggedId(null);
+    setDragOverId(null);
+  };
+
+  const handleDragEnd = () => {
+    console.log('Drag end');
+    setDraggedId(null);
+    setDragOverId(null);
   };
 
   return (
@@ -86,10 +161,17 @@ function TodoList({
             .sort((a, b) => a.order - b.order)
             .map((todo) => (
               <TodoItemComponent
-                key={`${todo.id}-${todo.title}-${todo.details}-${todo.time_nodes.length}`}
+                key={todo.id}
                 todo={todo}
                 groups={groups}
                 language={language}
+                isDragging={draggedId === todo.id}
+                isDragOver={dragOverId === todo.id}
+                onDragStart={() => handleDragStart(todo.id)}
+                onDragOver={(e: React.DragEvent) => handleDragOver(e, todo.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e: React.DragEvent) => handleDrop(e, todo.id)}
+                onDragEnd={handleDragEnd}
                 onUpdate={async (id, updates) => {
                   console.log('TodoList received update:', { id, updates });
                   await onUpdateTodo(id, updates);

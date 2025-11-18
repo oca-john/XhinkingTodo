@@ -38,9 +38,8 @@ function TodoCreator({ groups, language, defaultGroupId, onCreate, onCancel }: T
   const [details, setDetails] = useState("");
   const [isExpanded, setIsExpanded] = useState(false);
   const [groupId, setGroupId] = useState(defaultGroupId || groups[0]?.id || "");
-  const [colorTag, setColorTag] = useState<ColorTag>("Red1" as ColorTag);
+  const [colorTag, setColorTag] = useState<ColorTag>("Green4" as ColorTag);
   const [timeNodes, setTimeNodes] = useState<TempTimeNode[]>([]);
-  const [hasExpandedOnce, setHasExpandedOnce] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const titleInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,14 +61,16 @@ function TodoCreator({ groups, language, defaultGroupId, onCreate, onCancel }: T
   }, []);
 
   const handleTitleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
+    if (e.key === "Enter" && !e.nativeEvent.isComposing) {
       e.preventDefault();
       if (!isExpanded) {
         // 第一次按回车：展开属性面板
         setIsExpanded(true);
-        setHasExpandedOnce(true);
-      } else if (hasExpandedOnce && title.trim()) {
-        // 第二次按回车：确认创建
+      }
+    } else if (e.key === "Enter" && e.altKey && !e.nativeEvent.isComposing) {
+      // Alt+Enter：确认创建
+      e.preventDefault();
+      if (title.trim()) {
         handleCreate();
       }
     } else if (e.key === "Escape") {
@@ -129,7 +130,7 @@ function TodoCreator({ groups, language, defaultGroupId, onCreate, onCancel }: T
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && e.ctrlKey) {
+    if (e.key === "Enter" && e.altKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       handleCreate();
     } else if (e.key === "Escape") {
@@ -280,7 +281,7 @@ function TodoCreator({ groups, language, defaultGroupId, onCreate, onCancel }: T
               disabled={!title.trim()}
               className="px-3 py-1 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              确认 (Enter)
+              确认 (Alt+Enter)
             </button>
           </div>
         </div>
@@ -295,7 +296,7 @@ function TodoCreator({ groups, language, defaultGroupId, onCreate, onCancel }: T
       {/* 已展开时的提示 */}
       {isExpanded && title && (
         <div className="px-3 pb-2 text-xs" style={{ color: 'var(--text-secondary)' }}>
-          按 Enter 确认新建
+          按 Alt+Enter 确认新建
         </div>
       )}
     </div>

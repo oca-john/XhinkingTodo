@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { AppData, Theme, AppSettings, DockedEdge, ColorTag, TimeNode } from "./types";
 import { api } from "./services/api";
 import Sidebar from "./components/Sidebar";
@@ -21,11 +21,35 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // 导航栏折叠状态
   const [expandedPosition, setExpandedPosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const collapseTimeoutRef = useRef<number | null>(null);
+  const rightEdgeRef = useRef<number | null>(null); // 记录右边缘位置
+  const isAdjustingRef = useRef<boolean>(false);
+
+  // 使用useCallback包装handleUpdateSettings，避免依赖问题
+  const handleUpdateSettings = useCallback(async (settings: AppSettings) => {
+    if (!appData) return;
+    try {
+      await api.updateSettings(settings);
+      setAppData({
+        ...appData,
+        settings,
+      });
+    } catch (error) {
+      console.error("Failed to update settings:", error);
+    }
+  }, [appData]);
 
   useEffect(() => {
     loadData();
     initializeDocking();
   }, []);
+
+  // 初始化右边缘位置
+  useEffect(() => {
+    if (expandedPosition && rightEdgeRef.current === null) {
+      rightEdgeRef.current = expandedPosition.x + expandedPosition.width;
+      console.log('初始化右边缘位置:', rightEdgeRef.current);
+    }
+  }, [expandedPosition]);
 
   // 监听窗口大小变化，在会话中记住用户调整
   useEffect(() => {
@@ -33,7 +57,7 @@ function App() {
     
     const handleResize = async () => {
       // 只在窗口展开时更新位置
-      if (!isCollapsed && !isPinned) {
+      if (!isCollapsed && !isPinned && !isAdjustingRef.current) {
         if (resizeTimeout) {
           clearTimeout(resizeTimeout);
         }
@@ -41,6 +65,31 @@ function App() {
         resizeTimeout = window.setTimeout(async () => {
           try {
             const currentPos = await api.getWindowPosition();
+            
+            // 如果停靠在上边缘，保持右边缘位置固定
+            if (dockedEdge === DockedEdge.Top && rightEdgeRef.current !== null) {
+              const currentRightEdge = currentPos.x + currentPos.width;
+              const rightEdgeDelta = currentRightEdge - rightEdgeRef.current;
+              
+              // 如果右边缘位置变化了，需要调整x坐标
+              if (Math.abs(rightEdgeDelta) > 1) { // 允许1px误差
+                isAdjustingRef.current = true;
+                
+                // 根据固定的右边缘位置计算新的x坐标
+                const newX = rightEdgeRef.current - currentPos.width;
+                await api.expandFromEdge(newX, currentPos.y, currentPos.width, currentPos.height);
+                currentPos.x = newX;
+                console.log(`上边缘停靠：右边缘保持在${rightEdgeRef.current}，x调整为${newX}`);
+                
+                setTimeout(() => {
+                  isAdjustingRef.current = false;
+                }, 100);
+              } else {
+                // 右边缘位置没有明显变化，更新参考位置
+                rightEdgeRef.current = currentRightEdge;
+              }
+            }
+            
             const newPosition = {
               x: currentPos.x,
               y: currentPos.y,
@@ -74,7 +123,7 @@ function App() {
         clearTimeout(resizeTimeout);
       }
     };
-  }, [isCollapsed, isPinned]); // 依赖于这两个状态
+  }, [isCollapsed, isPinned, appData, handleUpdateSettings, dockedEdge]); // 移除expandedPosition依赖，避免循环
 
   // 初始化停靠：默认停靠在右侧
   const initializeDocking = async () => {
@@ -107,12 +156,17 @@ function App() {
       }
       
       // 保存展开状态的位置和尺寸
-      setExpandedPosition({
+      const position = {
         x: Math.floor(defaultX),
         y: Math.floor(defaultY),
         width: Math.floor(defaultWidth),
         height: Math.floor(defaultHeight),
-      });
+      };
+      setExpandedPosition(position);
+      
+      // 初始化右边缘位置
+      rightEdgeRef.current = position.x + position.width;
+      console.log('窗口初始化，右边缘位置:', rightEdgeRef.current);
       
       // 默认停靠到右侧，折叠状态（使用正确的窗口尺寸）
       await api.collapseToEdge(
@@ -369,18 +423,6 @@ function App() {
     setSelectedGroupId(groupId);
   };
 
-  const handleUpdateSettings = async (settings: AppSettings) => {
-    if (!appData) return;
-    try {
-      await api.updateSettings(settings);
-      setAppData({
-        ...appData,
-        settings,
-      });
-    } catch (error) {
-      console.error("Failed to update settings:", error);
-    }
-  };
 
   // 处理指示器悬停 - 展开窗口
   const handleIndicatorHover = async () => {
@@ -438,7 +480,7 @@ function App() {
     }
   };
 
-  // 处理窗口鼠标离开 - 延迟折叠窗口
+  // 处理窗口鼠标离开 - 延迟折叠窗口（使用鼠标位置检测）
   const handleWindowMouseLeave = () => {
     if (isPinned || isCollapsed) return; // 钉住或已折叠时不处理
 
@@ -446,18 +488,23 @@ function App() {
       clearTimeout(collapseTimeoutRef.current);
     }
     
-    // 延迟500毫秒后折叠
+    // 延迟500毫秒后检查鼠标位置再决定是否折叠
     collapseTimeoutRef.current = window.setTimeout(async () => {
       if (!isPinned && !isCollapsed && expandedPosition) {
         try {
-          await api.collapseToEdge(
-            dockedEdge,
-            expandedPosition.y,
-            expandedPosition.height,
-            expandedPosition.x,
-            expandedPosition.width
-          );
-          setIsCollapsed(true);
+          // 检查鼠标是否仍在窗口内
+          const mouseInWindow = await api.isMouseInWindow();
+          if (!mouseInWindow) {
+            // 鼠标确实离开了窗口，执行折叠
+            await api.collapseToEdge(
+              dockedEdge,
+              expandedPosition.y,
+              expandedPosition.height,
+              expandedPosition.x,
+              expandedPosition.width
+            );
+            setIsCollapsed(true);
+          }
         } catch (error) {
           console.error("Failed to collapse window:", error);
         }
@@ -489,8 +536,13 @@ function App() {
         }
       }
     } else {
-      // 取消钉住：如果鼠标不在窗口上，延迟折叠
-      handleWindowMouseLeave();
+      // 取消钉住：检查鼠标位置，如果不在窗口上则延迟折叠
+      setTimeout(async () => {
+        const mouseInWindow = await api.isMouseInWindow();
+        if (!mouseInWindow) {
+          handleWindowMouseLeave();
+        }
+      }, 100);
     }
   };
 

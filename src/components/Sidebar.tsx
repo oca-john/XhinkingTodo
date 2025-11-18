@@ -1,4 +1,5 @@
-import { CheckSquare, Settings, Info, Plus, ChevronLeft, ChevronRight, Edit2, Trash2 } from "lucide-react";
+import { CheckSquare, Settings, Info, Plus, ChevronLeft, ChevronRight, Edit2, Trash2, X } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 import { TodoGroup, Language } from "../types";
 import { t } from "../i18n";
 
@@ -17,9 +18,6 @@ interface SidebarProps {
   onCollapseChange?: (collapsed: boolean) => void;
 }
 
-import { useState } from "react";
-import { X } from "lucide-react";
-
 function Sidebar({
   groups,
   language,
@@ -35,6 +33,7 @@ function Sidebar({
   onCollapseChange,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(true);
+  const inputRef = useRef<HTMLInputElement>(null);
   
   const handleToggleCollapse = () => {
     const newCollapsed = !collapsed;
@@ -48,6 +47,16 @@ function Sidebar({
   const [dialogGroupId, setDialogGroupId] = useState<string>('');
   const [dialogGroupName, setDialogGroupName] = useState<string>('');
   const [inputValue, setInputValue] = useState<string>('');
+
+  // 当对话框打开时，自动聚焦到输入框
+  useEffect(() => {
+    if (dialogOpen && dialogType !== 'delete') {
+      // 延迟聚焦，确保DOM已渲染
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 50);
+    }
+  }, [dialogOpen, dialogType]);
 
   const handleNewGroup = () => {
     setDialogType('create');
@@ -214,22 +223,24 @@ function Sidebar({
 
       {/* Dialog */}
       {dialogOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleDialogCancel}>
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" 
+          onClick={handleDialogCancel}
+          onMouseEnter={(e) => {
+            // 对话框打开时，阻止窗口折叠
+            e.stopPropagation();
+          }}
+          onMouseMove={(e) => {
+            // 持续阻止事件冒泡，防止窗口认为鼠标离开
+            e.stopPropagation();
+          }}
+        >
           <div 
             className="rounded-lg shadow-xl w-80 max-w-[90vw]" 
             style={{ backgroundColor: 'var(--modal-bg)' }} 
             onClick={(e) => e.stopPropagation()}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                handleDialogConfirm();
-              } else if (e.key === 'Escape') {
-                e.preventDefault();
-                handleDialogCancel();
-              }
-            }}
-            tabIndex={-1}
-            ref={(el) => el?.focus()}
+            onMouseEnter={(e) => e.stopPropagation()}
+            onMouseMove={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <h3 className="font-semibold">
@@ -248,19 +259,27 @@ function Sidebar({
                     {t("dialog.group_name", language)}
                   </label>
                   <input
+                    ref={inputRef}
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder={t("dialog.group_name_placeholder", language)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ backgroundColor: 'var(--input-bg)' }}
-                    autoFocus
                     onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
+                      if (e.key === 'Enter' && e.altKey && !e.nativeEvent.isComposing) {
+                        e.preventDefault();
                         handleDialogConfirm();
                       } else if (e.key === 'Escape') {
+                        e.preventDefault();
                         handleDialogCancel();
                       }
+                    }}
+                    onCompositionStart={(e) => {
+                      e.stopPropagation();
+                    }}
+                    onCompositionEnd={(e) => {
+                      e.stopPropagation();
                     }}
                   />
                 </div>
@@ -285,7 +304,7 @@ function Sidebar({
                   dialogType === 'delete' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
                 }`}
               >
-                {dialogType === 'delete' ? `${t("button.delete", language)} (Enter)` : `${t("button.confirm", language)} (Enter)`}
+                {dialogType === 'delete' ? `${t("button.delete", language)} (Alt+Enter)` : `${t("button.confirm", language)} (Alt+Enter)`}
               </button>
             </div>
           </div>

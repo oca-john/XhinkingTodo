@@ -150,4 +150,8 @@ export const api = {
   expandFromEdge: async (x: number, y: number, width: number, height: number): Promise<void> => {
     return await invoke("expand_from_edge", { x, y, width, height });
   },
+
+  isMouseInWindow: async (): Promise<boolean> => {
+    return await invoke("is_mouse_in_window");
+  },
 };

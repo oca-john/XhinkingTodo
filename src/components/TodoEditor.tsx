@@ -94,7 +94,12 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && title.trim()) {
+    // 检查是否在输入法输入过程中
+    if ((e.nativeEvent as any).isComposing) {
+      return;
+    }
+    
+    if (e.key === "Enter" && e.altKey && title.trim()) {
       e.preventDefault();
       handleSave();
     } else if (e.key === "Escape") {
@@ -104,7 +109,11 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onMouseEnter={(e) => e.stopPropagation()}
+      onMouseMove={(e) => e.stopPropagation()}
+    >
       <div 
         ref={dialogRef}
         className="rounded-lg shadow-xl w-full max-w-[calc(100vw-8rem)] max-h-[min(75vh,640px)] overflow-hidden flex flex-col" 
@@ -117,6 +126,8 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
             e.preventDefault();
           }
         }}
+        onMouseEnter={(e) => e.stopPropagation()}
+        onMouseMove={(e) => e.stopPropagation()}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b">
@@ -143,6 +154,8 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               style={{ backgroundColor: 'var(--input-bg)' }}
               placeholder={t("editor.title_placeholder", language)}
+              onCompositionStart={(e) => e.stopPropagation()}
+              onCompositionEnd={(e) => e.stopPropagation()}
             />
           </div>
 
@@ -159,6 +172,8 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
               style={{ backgroundColor: 'var(--input-bg)' }}
               rows={4}
               placeholder={t("editor.details_placeholder", language)}
+              onCompositionStart={(e) => e.stopPropagation()}
+              onCompositionEnd={(e) => e.stopPropagation()}
             />
           </div>
 
@@ -265,19 +280,19 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t">
+        <div className="flex items-center justify-end gap-2 px-6 py-4 border-t">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition"
+            className="px-4 py-2 text-sm text-gray-700 hover:bg-gray-200 rounded transition"
           >
             {t("button.cancel", language)} (Esc)
           </button>
           <button
             onClick={handleSave}
             disabled={!title.trim()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {t("button.update", language)} (Enter)
+            {t("button.save", language)} (Alt+Enter)
           </button>
         </div>
       </div>
