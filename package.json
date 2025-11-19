@@ -1,6 +1,6 @@
 {
   "name": "xhinking-todo",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "A modern desktop todo application built with Tauri and Rust",
   "private": true,
   "type": "module",
@@ -9,7 +9,7 @@
     "build": "npm run sync-version && tsc && vite build",
     "preview": "vite preview",
     "tauri": "tauri",
-    "tauri:dev": "tauri dev",
+    "tauri:dev": "npm run sync-version && tauri dev",
     "tauri:build": "npm run sync-version && tauri build",
     "sync-version": "node scripts/sync-version.cjs"
   },
