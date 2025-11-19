@@ -4,7 +4,7 @@
 
 ![Version](https://img.shields.io/badge/version-0.9.8-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
-![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)
 
 ## ✨ 功能特性
 
@@ -16,9 +16,9 @@
 - 🔍 **快速搜索**：实时搜索待办内容
 
 ### 窗口管理
-- 📌 **边缘停靠**：吸附到屏幕边缘，自动隐藏
+- 📌 **边缘停靠**：吸附到屏幕边缘，自动隐藏(所有平台)
 - 🎨 **彩带指示器**：折叠时显示彩虹滚动指示器
-- 🖱️ **悬停展开**：鼠标悬停自动展开窗口
+- 🖱️ **悬停展开**：鼠标悬停自动展开窗口(所有平台含 Wayland)
 - 📏 **记住尺寸**：自动保存和恢复窗口大小位置
 
 ### 个性化
@@ -37,7 +37,24 @@
 
 - **Node.js** >= 16.0
 - **Rust** >= 1.70
-- **操作系统**：Windows / macOS / Linux
+- **操作系统**：Windows / Linux
+
+### 平台兼容性
+
+**支持的操作系统**：
+- ✅ **Windows 10/11**：全部功能完整支持
+- ✅ **Linux (纯 Wayland)**：核心功能完整支持
+- ✅ **Linux (XWayland)**：全部功能完整支持
+
+**Wayland 说明**：
+
+纯 Wayland 环境下，所有核心功能正常工作，包括：
+- ✅ 边缘停靠
+- ✅ 鼠标悬停展开
+- ✅ 自动折叠
+- ✅ 窗口拖拽
+
+由于 Wayland 安全限制，部分内部安全检查使用保守策略，在极少数边缘情况下(如快速拖拽后离开窗口)行为可能与 X11 略有不同，但不影响日常使用。
 
 ### 安装依赖
 
@@ -66,9 +83,7 @@ npm run tauri:build
 
 构建产物位置：
 - Windows: `src-tauri/target/release/bundle/msi/` 和 `nsis/`
-- macOS: `src-tauri/target/release/bundle/dmg/`
 - Linux (RPM): `src-tauri/target/release/bundle/rpm/` (openSUSE/Fedora/RHEL)
-- Linux (DEB): `src-tauri/target/release/bundle/deb/` (Debian/Ubuntu)
 - Linux (通用): `src-tauri/target/release/bundle/appimage/` (AppImage)
 
 ### 自动化发布
@@ -77,17 +92,17 @@ npm run tauri:build
 
 **自动触发**：
 - 推送版本标签（如 `v0.9.8`）自动构建并发布
-- 生成 Windows/macOS/Linux 三平台安装包
-- Linux 生成 `.rpm`（openSUSE/Fedora）和 `.deb`（Debian/Ubuntu）双格式
+- 生成 Windows/Linux 双平台安装包
+- Linux 生成 `.rpm`（openSUSE/Fedora）和 `.AppImage`（通用）双格式
 
 **Linux 发行版支持**：
 - 🥇 首要支持：openSUSE (.rpm)
-- 🥈 次要支持：Fedora (.rpm)、Debian (.deb)、Ubuntu (.deb)
+- 🥈 次要支持：Fedora (.rpm)
 - ⚙️ 通用支持：其他发行版使用 AppImage
 
 **构建优化**：
 - RPM 包使用 `opensuse/tumbleweed` 容器构建，确保在 openSUSE 上最佳表现
-- DEB 包使用 `ubuntu-20.04` 环境构建，兼容 Debian 系发行版
+
 - 所有构建任务并行执行，约 12-15 分钟完成
 
 **手动触发**：
@@ -134,7 +149,7 @@ XhinkingTodo-rust/
 ├── scripts/                      # 工具脚本
 │   └── sync-version.cjs         # 版本号同步脚本
 ├── tools-temp/                   # 临时工具（开发用）
-│   ├── generate_icns.py         # macOS 图标生成
+
 │   ├── generate_ico.py          # Windows 图标生成
 │   └── generate_icons.py        # 通用图标生成
 ├── package.json                 # Node.js 配置
@@ -188,7 +203,7 @@ XhinkingTodo-rust/
 
 数据自动保存到本地：
 - **Windows**: `%APPDATA%\com.xhinking.todo\data.json`
-- **macOS**: `~/Library/Application Support/com.xhinking.todo/data.json`
+
 - **Linux**: `~/.local/share/com.xhinking.todo/data.json`
 
 ### 导入导出

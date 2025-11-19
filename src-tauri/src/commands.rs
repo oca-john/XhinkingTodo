@@ -624,7 +624,13 @@ pub fn is_mouse_in_window(window: Window) -> Result<bool, String> {
     let window_size = window.outer_size()
         .map_err(|e| format!("Failed to get window size: {}", e))?;
     
-    // 获取鼠标位置
+    // 计算窗口边界(共享逻辑)
+    let window_left = window_pos.x;
+    let window_right = window_pos.x + window_size.width as i32;
+    let window_top = window_pos.y;
+    let window_bottom = window_pos.y + window_size.height as i32;
+    
+    // 获取鼠标位置 - Windows 实现
     #[cfg(target_os = "windows")]
     {
         use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
@@ -637,16 +643,43 @@ pub fn is_mouse_in_window(window: Window) -> Result<bool, String> {
                 let mouse_y = point.y;
                 
                 // 检查鼠标是否在窗口范围内
-                let in_window = mouse_x >= window_pos.x 
-                    && mouse_x < window_pos.x + window_size.width as i32
-                    && mouse_y >= window_pos.y 
-                    && mouse_y < window_pos.y + window_size.height as i32;
+                let in_window = mouse_x >= window_left 
+                    && mouse_x < window_right
+                    && mouse_y >= window_top 
+                    && mouse_y < window_bottom;
                 
                 return Ok(in_window);
+            }
+        }
+        // Windows API 调用失败时返回 false
+        return Ok(false);
+    }
+    
+    // 获取鼠标位置 - Linux 实现
+    #[cfg(target_os = "linux")]
+    {
+        use mouse_position::mouse_position::Mouse;
+        
+        match Mouse::get_mouse_position() {
+            mouse_position::mouse_position::Position::Coordinates { x, y } => {
+                // 检查鼠标是否在窗口范围内
+                let in_window = x >= window_left 
+                    && x < window_right
+                    && y >= window_top 
+                    && y < window_bottom;
+                
+                return Ok(in_window);
+            }
+            mouse_position::mouse_position::Position::Error => {
+                // Wayland 环境或其他错误
+                // 返回 false,让应用依赖 Web 事件处理
+                // 这是预期行为,不打印错误日志
+                return Ok(false);
             }
         }
     }
     
     // 其他平台默认返回false
+    #[cfg(not(any(target_os = "windows", target_os = "linux")))]
     Ok(false)
 }
