@@ -22,6 +22,6 @@
  *    - SettingsPanel.tsx (设置页面)
  */
 
-export const APP_VERSION = "0.9.9";
+export const APP_VERSION = "1.0.0";
 export const APP_NAME = "XhinkingTodo";
 export const APP_AUTHOR = "Oca John";

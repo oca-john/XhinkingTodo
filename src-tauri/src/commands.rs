@@ -571,11 +571,25 @@ pub fn collapse_to_edge(
     match edge {
         DockedEdge::Right => {
             // 右侧停靠：宽度变为2px，保持高度，移到屏幕右边缘内侧
-            let new_x = monitor_pos.x + monitor_size.width as i32 - INDICATOR_THICKNESS as i32;
-            window.set_position(PhysicalPosition::new(new_x, window_y))
-                .map_err(|e| format!("Failed to set window position: {}", e))?;
-            window.set_size(tauri::PhysicalSize::new(INDICATOR_THICKNESS, window_height))
-                .map_err(|e| format!("Failed to set window size: {}", e))?;
+            // Linux 需要先设置大小再设置位置，以确保正确计算
+            #[cfg(target_os = "linux")]
+            {
+                window.set_size(tauri::PhysicalSize::new(INDICATOR_THICKNESS, window_height))
+                    .map_err(|e| format!("Failed to set window size: {}", e))?;
+                let new_x = monitor_pos.x + monitor_size.width as i32 - INDICATOR_THICKNESS as i32;
+                window.set_position(PhysicalPosition::new(new_x, window_y))
+                    .map_err(|e| format!("Failed to set window position: {}", e))?;
+            }
+            
+            // Windows 保持原有逻辑：先设置位置再设置大小
+            #[cfg(not(target_os = "linux"))]
+            {
+                let new_x = monitor_pos.x + monitor_size.width as i32 - INDICATOR_THICKNESS as i32;
+                window.set_position(PhysicalPosition::new(new_x, window_y))
+                    .map_err(|e| format!("Failed to set window position: {}", e))?;
+                window.set_size(tauri::PhysicalSize::new(INDICATOR_THICKNESS, window_height))
+                    .map_err(|e| format!("Failed to set window size: {}", e))?;
+            }
         },
         DockedEdge::Top => {
             // 顶部停靠：高度变为2px，保持宽度，移到屏幕顶部
@@ -660,8 +674,9 @@ pub fn is_mouse_in_window(window: Window) -> Result<bool, String> {
     {
         use mouse_position::mouse_position::Mouse;
         
-        match Mouse::get_mouse_position() {
-            mouse_position::mouse_position::Position::Coordinates { x, y } => {
+        let position = Mouse::get_mouse_position();
+        match position {
+            Mouse::Position { x, y } => {
                 // 检查鼠标是否在窗口范围内
                 let in_window = x >= window_left 
                     && x < window_right
@@ -670,7 +685,7 @@ pub fn is_mouse_in_window(window: Window) -> Result<bool, String> {
                 
                 return Ok(in_window);
             }
-            mouse_position::mouse_position::Position::Error => {
+            Mouse::Error => {
                 // Wayland 环境或其他错误
                 // 返回 false,让应用依赖 Web 事件处理
                 // 这是预期行为,不打印错误日志
