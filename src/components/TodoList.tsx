@@ -5,6 +5,21 @@ import { t } from "../i18n";
 import TodoItemComponent from "./TodoItem";
 import TodoCreator from "./TodoCreator";
 import { api } from "../services/api";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 interface TodoListProps {
   todos: TodoItem[];
@@ -20,6 +35,9 @@ interface TodoListProps {
   }) => void;
   onUpdateTodo: (id: string, updates: any) => Promise<void>;
   onDeleteTodo: (id: string) => void;
+  onTodosReordered?: () => Promise<void>;  // 待办排序后的刷新回调
+  onDragStart?: () => void;  // 拖动开始回调
+  onDragEnd?: () => void;    // 拖动结束回调
 }
 
 function TodoList({
@@ -30,10 +48,26 @@ function TodoList({
   onCreateTodo,
   onUpdateTodo,
   onDeleteTodo,
+  onTodosReordered,
+  onDragStart,
+  onDragEnd,
 }: TodoListProps) {
   const [isCreating, setIsCreating] = useState(false);
-  const [draggedId, setDraggedId] = useState<string | null>(null);
-  const [dragOverId, setDragOverId] = useState<string | null>(null);
+  
+  // dnd-kit sensors配置
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 移动8px后才激活拖拽，避免误触
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+  
+  // 按order排序获取待办列表
+  const sortedTodos = [...todos].sort((a, b) => a.order - b.order);
 
   const handleCreate = (data: {
     title: string;
@@ -50,76 +84,58 @@ function TodoList({
     setIsCreating(false);
   };
 
-  // 拖拽处理函数
-  const handleDragStart = (todoId: string) => {
-    console.log('Drag start:', todoId);
-    setDraggedId(todoId);
-  };
-
-  const handleDragOver = (e: React.DragEvent, todoId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (draggedId && draggedId !== todoId) {
-      setDragOverId(todoId);
+  // dnd-kit拖拽开始处理
+  const handleDragStart = () => {
+    if (onDragStart) {
+      onDragStart();
     }
   };
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault();
-    setDragOverId(null);
-  };
+  // dnd-kit拖拽结束处理
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
 
-  const handleDrop = async (e: React.DragEvent, targetId: string) => {
-    e.preventDefault();
-    e.stopPropagation();
-    
-    console.log('Drop:', { draggedId, targetId });
-    
-    if (!draggedId || draggedId === targetId) {
-      setDraggedId(null);
-      setDragOverId(null);
+    // 如果没有有效的拖动目标，立即通知结束
+    if (!over || active.id === over.id) {
+      if (onDragEnd) {
+        onDragEnd();
+      }
       return;
     }
 
-    // 按order排序获取当前顺序
-    const sortedTodos = [...todos].sort((a, b) => a.order - b.order);
-    
-    // 找到拖动的todo和目标位置的索引
-    const draggedIndex = sortedTodos.findIndex(t => t.id === draggedId);
-    const targetIndex = sortedTodos.findIndex(t => t.id === targetId);
-    
-    if (draggedIndex === -1 || targetIndex === -1) {
+    const oldIndex = sortedTodos.findIndex((todo) => todo.id === active.id);
+    const newIndex = sortedTodos.findIndex((todo) => todo.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
       console.error('Invalid drag operation');
-      setDraggedId(null);
-      setDragOverId(null);
+      if (onDragEnd) {
+        onDragEnd();
+      }
       return;
     }
 
-    // 移动元素
-    const [draggedTodo] = sortedTodos.splice(draggedIndex, 1);
-    sortedTodos.splice(targetIndex, 0, draggedTodo);
-
-    // 获取新的ID顺序
-    const newOrderIds = sortedTodos.map(todo => todo.id);
-    console.log('New order:', newOrderIds);
+    // 使用dnd-kit的arrayMove重新排序
+    const reorderedTodos = arrayMove(sortedTodos, oldIndex, newIndex);
+    const newOrderIds = reorderedTodos.map((todo) => todo.id);
+    
+    console.log('Reordered:', { oldIndex, newIndex, newOrderIds });
 
     try {
       // 调用API保存新顺序
       await api.reorderTodos(newOrderIds);
-      // 刷新数据
-      window.location.reload();
+      // 调用回调刷新数据（保持所有状态不变，包括isPinned）
+      if (onTodosReordered) {
+        await onTodosReordered();
+      }
+      console.log('待办排序成功，数据已刷新');
     } catch (error) {
-      console.error("Failed to reorder todos:", error);
+      console.error('Failed to reorder todos:', error);
+    } finally {
+      // 无论成功失败都要通知拖动结束
+      if (onDragEnd) {
+        onDragEnd();
+      }
     }
-
-    setDraggedId(null);
-    setDragOverId(null);
-  };
-
-  const handleDragEnd = () => {
-    console.log('Drag end');
-    setDraggedId(null);
-    setDragOverId(null);
   };
 
   return (
@@ -155,32 +171,35 @@ function TodoList({
           )}
         </div>
 
-        {/* Todo Items */}
-        <div className="space-y-2">
-          {todos
-            .sort((a, b) => a.order - b.order)
-            .map((todo) => (
-              <TodoItemComponent
-                key={todo.id}
-                todo={todo}
-                groups={groups}
-                language={language}
-                isDragging={draggedId === todo.id}
-                isDragOver={dragOverId === todo.id}
-                onDragStart={() => handleDragStart(todo.id)}
-                onDragOver={(e: React.DragEvent) => handleDragOver(e, todo.id)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e: React.DragEvent) => handleDrop(e, todo.id)}
-                onDragEnd={handleDragEnd}
-                onUpdate={async (id, updates) => {
-                  console.log('TodoList received update:', { id, updates });
-                  await onUpdateTodo(id, updates);
-                  console.log('TodoList: Update complete');
-                }}
-                onDelete={() => onDeleteTodo(todo.id)}
-              />
-            ))}
-        </div>
+        {/* Todo Items with dnd-kit */}
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={sortedTodos.map((todo) => todo.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2">
+              {sortedTodos.map((todo) => (
+                <TodoItemComponent
+                  key={todo.id}
+                  todo={todo}
+                  groups={groups}
+                  language={language}
+                  onUpdate={async (id, updates) => {
+                    console.log('TodoList received update:', { id, updates });
+                    await onUpdateTodo(id, updates);
+                    console.log('TodoList: Update complete');
+                  }}
+                  onDelete={() => onDeleteTodo(todo.id)}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
 
         {todos.length === 0 && (
           <div className="text-center text-gray-500 mt-8">

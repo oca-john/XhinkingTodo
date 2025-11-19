@@ -20,6 +20,7 @@ function App() {
   const [dockedEdge, setDockedEdge] = useState<DockedEdge>(DockedEdge.Right); // 默认右侧停靠
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // 导航栏折叠状态
   const [expandedPosition, setExpandedPosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  const [isDraggingTodo, setIsDraggingTodo] = useState(false); // 拖动待办条目状态
   const collapseTimeoutRef = useRef<number | null>(null);
   const rightEdgeRef = useRef<number | null>(null); // 记录右边缘位置
   const isAdjustingRef = useRef<boolean>(false);
@@ -40,8 +41,14 @@ function App() {
 
   useEffect(() => {
     loadData();
-    initializeDocking();
   }, []);
+
+  // 在数据加载完成后初始化窗口停靠
+  useEffect(() => {
+    if (appData && !expandedPosition) {
+      initializeDocking();
+    }
+  }, [appData]);
 
   // 初始化右边缘位置
   useEffect(() => {
@@ -99,12 +106,12 @@ function App() {
             setExpandedPosition(newPosition);
             
             // 如果开启了记住窗口大小，保存到设置中
-            if (appData?.settings.remember_window_size) {
+            if (appData && appData.settings.remember_window_size) {
               await handleUpdateSettings({
                 ...appData.settings,
                 window_position: currentPos,
               });
-              console.log('窗口尺寸已保存到设置:', currentPos);
+              console.log('✅ 窗口大小已保存:', currentPos);
             } else {
               console.log('窗口尺寸已更新（仅当前会话）:', currentPos);
             }
@@ -134,14 +141,28 @@ function App() {
       let defaultX, defaultY, defaultWidth, defaultHeight;
       
       // 如果开启了记住窗口大小且有保存的位置，使用保存的值
-      if (appData?.settings.remember_window_size && appData.settings.window_position) {
+      if (appData && appData.settings.remember_window_size && appData.settings.window_position) {
         const saved = appData.settings.window_position;
-        defaultX = saved.x;
-        defaultY = saved.y;
-        defaultWidth = saved.width;
-        defaultHeight = saved.height;
-        console.log('使用保存的窗口大小:', saved);
+        // 验证保存的值是否有效
+        if (saved.x && saved.y && saved.width && saved.height) {
+          defaultX = saved.x;
+          defaultY = saved.y;
+          defaultWidth = saved.width;
+          defaultHeight = saved.height;
+          console.log('✅ 使用保存的窗口大小:', saved);
+        } else {
+          console.warn('⚠️ 保存的窗口位置数据无效，使用默认值');
+          // 使用默认值
+          const rightMargin = monitorWidth / 80;
+          const topMargin = monitorHeight / 45;
+          const margin = Math.min(rightMargin, topMargin);
+          defaultHeight = Math.floor(monitorHeight * 2 / 3);
+          defaultWidth = currentPos.width;
+          defaultX = monitorX + monitorWidth - defaultWidth - margin;
+          defaultY = monitorY + margin;
+        }
       } else {
+        console.log('📄 未开启记住窗口大小或无保存数据，使用默认值');
         // 计算窗口展开时的默认位置
         // 分别计算距离右侧和上边的距离，取较小值以适配不同比例显示器
         const rightMargin = monitorWidth / 80;    // 右侧边距
@@ -448,7 +469,11 @@ function App() {
 
   // 处理指示器离开 - 延迟折叠窗口
   const handleIndicatorLeave = () => {
-    if (isPinned) return; // 钉住时不折叠
+    // 【钉住权限最高】钉住时不折叠
+    if (isPinned) {
+      console.log('窗口已钉住，忽略指示器离开事件');
+      return;
+    }
     
     // 延迟500毫秒后折叠
     if (collapseTimeoutRef.current) {
@@ -456,7 +481,13 @@ function App() {
     }
     
     collapseTimeoutRef.current = window.setTimeout(async () => {
-      if (!isPinned && !isCollapsed && expandedPosition) {
+      // 【钉住权限最高】双重检查isPinned状态
+      if (isPinned) {
+        console.log('窗口已钉住，取消延迟折叠');
+        return;
+      }
+      
+      if (!isCollapsed && expandedPosition) {
         try {
           await api.collapseToEdge(
             dockedEdge,
@@ -478,11 +509,17 @@ function App() {
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
     }
+    // 鼠标重新进入窗口时，如果正在拖动，保持拖动状态
+    // 不重置isDraggingTodo，让拖动正常结束
   };
 
   // 处理窗口鼠标离开 - 延迟折叠窗口（使用鼠标位置检测）
   const handleWindowMouseLeave = () => {
-    if (isPinned || isCollapsed) return; // 钉住或已折叠时不处理
+    // 【钉住权限最高】钉住、已折叠或拖动中时不处理
+    if (isPinned || isCollapsed || isDraggingTodo) {
+      if (isPinned) console.log('窗口已钉住，忽略鼠标离开事件');
+      return;
+    }
 
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
@@ -490,7 +527,13 @@ function App() {
     
     // 延迟500毫秒后检查鼠标位置再决定是否折叠
     collapseTimeoutRef.current = window.setTimeout(async () => {
-      if (!isPinned && !isCollapsed && expandedPosition) {
+      // 【钉住权限最高】双重检查isPinned状态
+      if (isPinned) {
+        console.log('窗口已钉住，取消延迟折叠');
+        return;
+      }
+      
+      if (!isCollapsed && expandedPosition) {
         try {
           // 检查鼠标是否仍在窗口内
           const mouseInWindow = await api.isMouseInWindow();
@@ -551,6 +594,12 @@ function App() {
     const newEdge = dockedEdge === DockedEdge.Right ? DockedEdge.Top : DockedEdge.Right;
     setDockedEdge(newEdge);
     
+    // 【钉住权限最高】如果窗口已钉住，只切换停靠边，不折叠窗口
+    if (isPinned) {
+      console.log('窗口已钉住，只切换停靠边，不折叠');
+      return;
+    }
+    
     // 如果当前是折叠状态，需要先展开，再重新停靠
     if (isCollapsed && expandedPosition) {
       try {
@@ -563,8 +612,14 @@ function App() {
         );
         setIsCollapsed(false);
         
-        // 稍后重新折叠到新位置
+        // 稍后重新折叠到新位置（再次检查isPinned）
         setTimeout(async () => {
+          // 【二次确认钉住状态】防止在延迟期间窗口被钉住
+          if (isPinned) {
+            console.log('延迟期间窗口被钉住，取消折叠');
+            return;
+          }
+          
           try {
             const [monitorX, monitorY, monitorWidth, monitorHeight] = await api.getMonitorInfo();
             const centerY = monitorY + (monitorHeight - expandedPosition.height) / 2;
@@ -695,6 +750,7 @@ function App() {
               onUpdateGroup={handleUpdateGroup}
               onDeleteGroup={handleDeleteGroup}
               onCollapseChange={setSidebarCollapsed}
+              onGroupsReordered={loadData}
             />
             <div className="flex-1 overflow-auto">
               {selectedView === "settings" ? (
@@ -714,6 +770,33 @@ function App() {
                   onCreateTodo={handleCreateTodo}
                   onUpdateTodo={handleUpdateTodo}
                   onDeleteTodo={handleDeleteTodo}
+                  onTodosReordered={loadData}
+                  onDragStart={() => setIsDraggingTodo(true)}
+                  onDragEnd={async () => {
+                    // 拖动结束后，根据情况决定是否重置状态
+                    if (isPinned) {
+                      // 钉住状态，立即重置（不会折叠）
+                      setIsDraggingTodo(false);
+                    } else {
+                      // 未钉住，检查鼠标是否在窗口内
+                      try {
+                        const mouseInWindow = await api.isMouseInWindow();
+                        if (mouseInWindow) {
+                          // 鼠标在窗口内，立即重置
+                          setIsDraggingTodo(false);
+                        } else {
+                          // 鼠标已离开，延迟300ms重置，给用户时间移回鼠标
+                          setTimeout(() => {
+                            setIsDraggingTodo(false);
+                          }, 300);
+                        }
+                      } catch (error) {
+                        console.error('Failed to check mouse position:', error);
+                        // 出错时保守处理，立即重置
+                        setIsDraggingTodo(false);
+                      }
+                    }
+                  }}
                 />
               )}
             </div>

@@ -1,7 +1,22 @@
-import { CheckSquare, Settings, Info, Plus, ChevronLeft, ChevronRight, Edit2, Trash2, X } from "lucide-react";
+import { CheckSquare, Settings, Info, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { TodoGroup, Language } from "../types";
 import { t } from "../i18n";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import SortableGroupItem from "./SortableGroupItem";
+import { api } from "../services/api";
 
 interface SidebarProps {
   groups: TodoGroup[];
@@ -16,6 +31,7 @@ interface SidebarProps {
   onUpdateGroup?: (id: string, name: string) => void;
   onDeleteGroup?: (id: string) => void;
   onCollapseChange?: (collapsed: boolean) => void;
+  onGroupsReordered?: () => void;  // 分组排序后刷新回调
 }
 
 function Sidebar({
@@ -31,15 +47,67 @@ function Sidebar({
   onUpdateGroup,
   onDeleteGroup,
   onCollapseChange,
+  onGroupsReordered,
 }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(true);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  // dnd-kit sensors配置
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8, // 移动8px后才激活拖拽，避免误触
+      },
+    })
+  );
+  
+  // 按order排序获取分组列表，并分离默认分组和自定义分组
+  const sortedGroups = [...groups].sort((a, b) => a.order - b.order);
+  const defaultGroups = sortedGroups.filter(g => g.is_default);
+  const customGroups = sortedGroups.filter(g => !g.is_default);
   
   const handleToggleCollapse = () => {
     const newCollapsed = !collapsed;
     setCollapsed(newCollapsed);
     if (onCollapseChange) {
       onCollapseChange(newCollapsed);
+    }
+  };
+
+  // dnd-kit拖拽结束处理
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) {
+      return;
+    }
+
+    // 只在自定义分组中查找索引
+    const oldIndex = customGroups.findIndex((group) => group.id === active.id);
+    const newIndex = customGroups.findIndex((group) => group.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) {
+      console.error('Invalid drag operation');
+      return;
+    }
+
+    // 使用dnd-kit的arrayMove重新排序自定义分组
+    const reorderedCustomGroups = arrayMove(customGroups, oldIndex, newIndex);
+    // 合并默认分组和重新排序的自定义分组
+    const allReorderedGroups = [...defaultGroups, ...reorderedCustomGroups];
+    const newOrderIds = allReorderedGroups.map((group) => group.id);
+    
+    console.log('Groups reordered:', { oldIndex, newIndex, newOrderIds });
+
+    try {
+      // 调用API保存新顺序
+      await api.reorderGroups(newOrderIds);
+      // 刷新数据
+      if (onGroupsReordered) {
+        onGroupsReordered();
+      }
+    } catch (error) {
+      console.error('Failed to reorder groups:', error);
     }
   };
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -141,49 +209,42 @@ function Sidebar({
               {t("nav.todo_management", language)}
             </div>
           )}
-          {groups
-            .sort((a, b) => a.order - b.order)
-            .map((group) => (
-              <div
-                key={group.id}
-                className={`group/item flex items-center hover:bg-gray-200 transition ${
-                  selectedView === "group" && selectedGroupId === group.id
-                    ? "bg-gray-200 font-semibold"
-                    : ""
-                }`}
-              >
-                <button
-                  onClick={() => onSelectGroup(group.id)}
-                  className={`flex-1 py-2 text-left text-sm flex items-center gap-2 ${
-                    collapsed ? "justify-center" : "px-4"
-                  }`}
-                  title={collapsed ? group.name : ""}
-                >
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-semibold flex-shrink-0" style={{ backgroundColor: 'var(--button-bg)', color: 'var(--accent-color)' }}>
-                    {group.name.charAt(0).toUpperCase()}
-                  </div>
-                  {!collapsed && <span>{group.name}</span>}
-                </button>
-                {!collapsed && (
-                  <div className="opacity-0 group-hover/item:opacity-100 flex items-center gap-1 pr-2">
-                    <button
-                      onClick={(e) => handleEditGroup(group.id, group.name, e)}
-                      className="p-1 hover:bg-gray-300 rounded"
-                      title="编辑"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                    </button>
-                    <button
-                      onClick={(e) => handleDeleteGroup(group.id, group.name, e)}
-                      className="p-1 hover:bg-gray-300 rounded text-red-500"
-                      title="删除"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
-                )}
-              </div>
-            ))}
+          {/* 默认分组（不可拖动） */}
+          {defaultGroups.map((group) => (
+            <SortableGroupItem
+              key={group.id}
+              group={group}
+              isSelected={selectedView === "group" && selectedGroupId === group.id}
+              onSelect={() => onSelectGroup(group.id)}
+              onEdit={(e) => handleEditGroup(group.id, group.name, e)}
+              onDelete={(e) => handleDeleteGroup(group.id, group.name, e)}
+              collapsed={collapsed}
+            />
+          ))}
+          
+          {/* 自定义分组（可拖动） */}
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
+            <SortableContext
+              items={customGroups.map((group) => group.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              {customGroups.map((group) => (
+                <SortableGroupItem
+                  key={group.id}
+                  group={group}
+                  isSelected={selectedView === "group" && selectedGroupId === group.id}
+                  onSelect={() => onSelectGroup(group.id)}
+                  onEdit={(e) => handleEditGroup(group.id, group.name, e)}
+                  onDelete={(e) => handleDeleteGroup(group.id, group.name, e)}
+                  collapsed={collapsed}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
           <button
             onClick={handleNewGroup}
             className={`w-full py-2 text-left flex items-center gap-2 text-sm text-blue-600 hover:bg-gray-200 transition ${

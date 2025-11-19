@@ -80,6 +80,7 @@ fn main() {
             create_group,
             update_group,
             delete_group,
+            reorder_groups,
             update_settings,
             export_data,
             import_data,

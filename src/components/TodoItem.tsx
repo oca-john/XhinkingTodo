@@ -1,21 +1,16 @@
-import { useState, useRef } from "react";
-import { Check, Trash2, FileText, Calendar, Tag, Edit2, GripVertical } from "lucide-react";
+import { useState } from "react";
+import { Check, Trash2, FileText, Calendar, Tag, Edit2 } from "lucide-react";
 import TodoEditor from "./TodoEditor";
 import type { TodoItem as TodoItemType, TodoGroup, Language } from "../types";
 import { ColorTag } from "../types";
 import { format } from "date-fns";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface TodoItemProps {
   todo: TodoItemType;
   groups: TodoGroup[];
   language: Language;
-  isDragging: boolean;
-  isDragOver: boolean;
-  onDragStart: () => void;
-  onDragOver: (e: React.DragEvent) => void;
-  onDragLeave: (e: React.DragEvent) => void;
-  onDrop: (e: React.DragEvent) => void;
-  onDragEnd: () => void;
   onUpdate: (id: string, updates: any) => Promise<void>;
   onDelete: () => void;
 }
@@ -34,19 +29,27 @@ function TodoItemComponent({
   todo, 
   groups, 
   language, 
-  isDragging,
-  isDragOver,
-  onDragStart,
-  onDragOver,
-  onDragLeave,
-  onDrop,
-  onDragEnd,
   onUpdate, 
   onDelete 
 }: TodoItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const dragHandlePressed = useRef(false);
+  
+  // dnd-kit sortable hook
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: todo.id });
+  
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
 
   const handleToggleComplete = async () => {
     await onUpdate(todo.id, { completed: !todo.completed });
@@ -68,64 +71,35 @@ function TodoItemComponent({
   const nearestTimeNode = sortedTimeNodes.length > 0 ? sortedTimeNodes[0] : null;
   const hasMultipleTimeNodes = sortedTimeNodes.length > 1;
 
+  const handleClick = (e: React.MouseEvent) => {
+    // 如果点击的是按钮或其子元素，不展开
+    const target = e.target as HTMLElement;
+    if (target.closest('button')) {
+      return;
+    }
+    // 点击条目展开/折叠详情
+    setIsExpanded(!isExpanded);
+  };
+
   return (
     <div
-      draggable={true}
-      onDragStart={(e) => {
-        if (!dragHandlePressed.current) {
-          e.preventDefault();
-          return;
-        }
-        onDragStart();
-        e.dataTransfer.effectAllowed = 'move';
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      onClick={handleClick}
+      style={{
+        ...style,
+        backgroundColor: todo.completed ? 'var(--bg-secondary)' : 'var(--card-bg)',
+        cursor: isDragging ? 'grabbing' : 'grab',
       }}
-      onDragEnd={() => {
-        dragHandlePressed.current = false;
-        onDragEnd();
-      }}
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onDragOver(e);
-      }}
-      onDragLeave={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onDragLeave(e);
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onDrop(e);
-      }}
-      className={`border rounded-lg p-3 transition hover:shadow-md ${
+      className={`border rounded-lg p-3 transition-all duration-200 hover:shadow-md ${
         todo.completed ? "opacity-75" : ""
       } ${
-        isDragging ? "opacity-40 scale-95" : ""
-      } ${
-        isDragOver ? "border-blue-500 border-2 shadow-lg" : "border-gray-300"
-      }`}
-      style={{ backgroundColor: todo.completed ? 'var(--bg-secondary)' : 'var(--card-bg)' }}
-      onClick={() => setIsExpanded(!isExpanded)}
+        isDragging ? "scale-105 shadow-2xl" : ""
+      } border-gray-300`}
     >
-      {/* First Line: Drag Handle + Checkbox + Title */}
+      {/* First Line: Checkbox + Title */}
       <div className="flex items-start gap-2">
-        {/* 拖拽句柄 */}
-        <div 
-          onMouseDown={(e) => {
-            e.stopPropagation();
-            dragHandlePressed.current = true;
-          }}
-          onMouseUp={(e) => {
-            e.stopPropagation();
-            dragHandlePressed.current = false;
-          }}
-          onClick={(e) => e.stopPropagation()}
-          className="mt-0.5 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing"
-          title="拖动排序"
-        >
-          <GripVertical className="w-4 h-4" />
-        </div>
         <button
           onClick={(e) => {
             e.stopPropagation();

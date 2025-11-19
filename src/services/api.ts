@@ -104,6 +104,10 @@ export const api = {
     return await invoke("delete_group", { id, moveToPersonal });
   },
 
+  reorderGroups: async (groupIds: string[]): Promise<void> => {
+    return await invoke("reorder_groups", { groupIds });
+  },
+
   // 设置操作
   updateSettings: async (settings: AppSettings): Promise<void> => {
     return await invoke("update_settings", { settings });

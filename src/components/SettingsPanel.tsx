@@ -13,16 +13,16 @@ interface SettingsPanelProps {
 const themeOptions = [
   { value: Theme.White, key: "theme.white", preview: "bg-[#FFFFFF]" },
   { value: Theme.MilkWhite, key: "theme.milk_white", preview: "bg-[#F8F6F1]" },
-  { value: Theme.LightRed, key: "theme.light_red", preview: "bg-[#FFF0F0]" },
-  { value: Theme.LightYellow, key: "theme.light_yellow", preview: "bg-[#FFF9E6]" },
-  { value: Theme.LightGreen, key: "theme.light_green", preview: "bg-[#E8F5E8]" },
-  { value: Theme.LightBlue, key: "theme.light_blue", preview: "bg-[#E6EEF5]" },
-  { value: Theme.LightPurple, key: "theme.light_purple", preview: "bg-[#F0E6F5]" },
-  { value: Theme.DarkRed, key: "theme.dark_red", preview: "bg-[#3D1F1F]" },
-  { value: Theme.DarkYellow, key: "theme.dark_yellow", preview: "bg-[#4A3520]" },
-  { value: Theme.DarkGreen, key: "theme.dark_green", preview: "bg-[#1F3D3D]" },
-  { value: Theme.DarkBlue, key: "theme.dark_blue", preview: "bg-[#2C3A4A]" },
-  { value: Theme.DarkPurple, key: "theme.dark_purple", preview: "bg-[#3A2C4A]" },
+  { value: Theme.LightRed, key: "theme.light_red", preview: "bg-[#EDE8E8]" },
+  { value: Theme.LightYellow, key: "theme.light_yellow", preview: "bg-[#EDEBE0]" },
+  { value: Theme.LightGreen, key: "theme.light_green", preview: "bg-[#E5EDE8]" },
+  { value: Theme.LightBlue, key: "theme.light_blue", preview: "bg-[#E5EAED]" },
+  { value: Theme.LightPurple, key: "theme.light_purple", preview: "bg-[#ECE5ED]" },
+  { value: Theme.DarkRed, key: "theme.dark_red", preview: "bg-[#4A4040]" },
+  { value: Theme.DarkYellow, key: "theme.dark_yellow", preview: "bg-[#4A4638]" },
+  { value: Theme.DarkGreen, key: "theme.dark_green", preview: "bg-[#3E4A45]" },
+  { value: Theme.DarkBlue, key: "theme.dark_blue", preview: "bg-[#3E4550]" },
+  { value: Theme.DarkPurple, key: "theme.dark_purple", preview: "bg-[#483E50]" },
   { value: Theme.DarkGray, key: "theme.dark_gray", preview: "bg-[#2C2C2C]" },
   { value: Theme.Black, key: "theme.black", preview: "bg-[#1A1A1A]" },
 ];
@@ -47,12 +47,60 @@ function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }:
     onUpdateSettings({ ...settings, hide_completed: !settings.hide_completed });
   };
 
-  const handleToggleAutoStart = () => {
-    onUpdateSettings({ ...settings, auto_start: !settings.auto_start });
+  const handleToggleAutoStart = async () => {
+    const newAutoStart = !settings.auto_start;
+    try {
+      // 调用后端更新设置，后端会自动处理开机自启动系统设置
+      onUpdateSettings({ ...settings, auto_start: newAutoStart });
+      console.log(`开机自启动已${newAutoStart ? '启用' : '禁用'}`);
+      
+      // 显示成功提示
+      setTimeout(async () => {
+        await dialog.message(
+          newAutoStart 
+            ? (language === Language.SimplifiedChinese ? "开机自启动已启用！\n应用将在系统启动时自动运行。" : language === Language.TraditionalChinese ? "開機自啟動已啟用！\n應用將在系統啟動時自動運行。" : "Auto-start enabled!\nThe app will launch automatically when your system starts.")
+            : (language === Language.SimplifiedChinese ? "开机自启动已禁用" : language === Language.TraditionalChinese ? "開機自啟動已禁用" : "Auto-start disabled"),
+          { 
+            title: language === Language.SimplifiedChinese ? "成功" : language === Language.TraditionalChinese ? "成功" : "Success", 
+            type: "info" 
+          }
+        );
+      }, 300);
+    } catch (error) {
+      console.error('切换开机自启动失败:', error);
+      await dialog.message(
+        `${language === Language.SimplifiedChinese ? '设置开机自启动失败' : language === Language.TraditionalChinese ? '設置開機自啟動失敗' : 'Failed to set auto-start'}: ${error}`,
+        { 
+          title: language === Language.SimplifiedChinese ? "错误" : language === Language.TraditionalChinese ? "錯誤" : "Error", 
+          type: "error" 
+        }
+      );
+      // 恢复原状态
+      onUpdateSettings({ ...settings });
+    }
   };
 
   const handleToggleRememberWindowSize = () => {
-    onUpdateSettings({ ...settings, remember_window_size: !settings.remember_window_size });
+    const newRememberWindowSize = !settings.remember_window_size;
+    
+    // 如果关闭记住窗口大小，清空保存的窗口位置数据
+    if (!newRememberWindowSize) {
+      console.log('🗑️ 关闭记住窗口大小，清空保存的窗口位置数据');
+      onUpdateSettings({ 
+        ...settings, 
+        remember_window_size: false,
+        // 重置为默认值
+        window_position: {
+          x: 1400.0,
+          y: 100.0,
+          width: 384.0,
+          height: 720.0,
+        }
+      });
+    } else {
+      console.log('✅ 启用记住窗口大小');
+      onUpdateSettings({ ...settings, remember_window_size: true });
+    }
   };
 
   const handleExportData = async () => {

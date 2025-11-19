@@ -288,26 +288,44 @@ pub fn delete_group(
         return Err("Cannot delete default group".to_string());
     }
     
+    // 如果需要移动待办到personal分组
     if move_to_personal {
-        let personal_id = "personal".to_string();
         for todo in data.todos.iter_mut() {
             if todo.group_id == id {
-                todo.group_id = personal_id.clone();
+                todo.group_id = "personal".to_string();
             }
         }
     } else {
+        // 否则删除该分组的所有待办
         data.todos.retain(|t| t.group_id != id);
     }
     
+    // 删除分组
     data.groups.retain(|g| g.id != id);
+    
     state.storage.save(&data)?;
     
     Ok(())
 }
 
 #[tauri::command]
+pub fn reorder_groups(group_ids: Vec<String>, state: State<AppState>) -> Result<(), String> {
+    let mut data = state.data.lock()
+        .map_err(|e| format!("Failed to lock state: {}", e))?;
+    
+    for (index, id) in group_ids.iter().enumerate() {
+        if let Some(group) = data.groups.iter_mut().find(|g| &g.id == id) {
+            group.order = index as i32;
+        }
+    }
+    
+    state.storage.save(&data)?;
+    Ok(())
+}
+
+#[tauri::command]
 pub fn update_settings(
-    settings: AppSettings,
+    mut settings: AppSettings,
     state: State<AppState>,
 ) -> Result<(), String> {
     let mut data = state.data.lock()
@@ -335,6 +353,23 @@ pub fn update_settings(
             auto.disable()
                 .map_err(|e| format!("Failed to disable auto-start: {}", e))?;
         }
+    }
+    
+    // Handle remember_window_size change
+    // 如果关闭记住窗口大小，且前端未传递默认值，则自动重置
+    let old_remember = data.settings.remember_window_size;
+    let new_remember = settings.remember_window_size;
+    
+    if old_remember && !new_remember {
+        // 重置为默认值
+        settings.window_position = WindowPosition {
+            x: 1400.0,
+            y: 100.0,
+            width: 384.0,
+            height: 720.0,
+            docked_edge: Some(DockedEdge::Right),
+        };
+        println!("🗑️ 关闭记住窗口大小，重置 window_position 为默认值");
     }
     
     data.settings = settings;
