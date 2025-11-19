@@ -2,8 +2,9 @@
 
 一个现代化的桌面待办事项应用，基于 Tauri + Rust + React 构建。
 
-![Version](https://img.shields.io/badge/version-0.9.3-blue.svg)
+![Version](https://img.shields.io/badge/version-0.9.8-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)
 
 ## ✨ 功能特性
 
@@ -66,7 +67,34 @@ npm run tauri:build
 构建产物位置：
 - Windows: `src-tauri/target/release/bundle/msi/` 和 `nsis/`
 - macOS: `src-tauri/target/release/bundle/dmg/`
-- Linux: `src-tauri/target/release/bundle/deb/` 和 `appimage/`
+- Linux (RPM): `src-tauri/target/release/bundle/rpm/` (openSUSE/Fedora/RHEL)
+- Linux (DEB): `src-tauri/target/release/bundle/deb/` (Debian/Ubuntu)
+- Linux (通用): `src-tauri/target/release/bundle/appimage/` (AppImage)
+
+### 自动化发布
+
+本项目已配置 GitHub Actions 自动化构建：
+
+**自动触发**：
+- 推送版本标签（如 `v0.9.8`）自动构建并发布
+- 生成 Windows/macOS/Linux 三平台安装包
+- Linux 生成 `.rpm`（openSUSE/Fedora）和 `.deb`（Debian/Ubuntu）双格式
+
+**Linux 发行版支持**：
+- 🥇 首要支持：openSUSE (.rpm)
+- 🥈 次要支持：Fedora (.rpm)、Debian (.deb)、Ubuntu (.deb)
+- ⚙️ 通用支持：其他发行版使用 AppImage
+
+**构建优化**：
+- RPM 包使用 `opensuse/tumbleweed` 容器构建，确保在 openSUSE 上最佳表现
+- DEB 包使用 `ubuntu-20.04` 环境构建，兼容 Debian 系发行版
+- 所有构建任务并行执行，约 12-15 分钟完成
+
+**手动触发**：
+- 在 GitHub Actions 页面手动运行工作流
+
+**文档**：
+- 详细发布流程：[RELEASE.md](./RELEASE.md)
 
 ## 📁 项目结构
 
@@ -188,7 +216,7 @@ XhinkingTodo-rust/
 1. **修改版本号**：
    编辑 `src/version.ts` 中的版本号：
    ```typescript
-   export const APP_VERSION = "0.9.3";  // 只需修改这里
+   export const APP_VERSION = "0.9.8";  // 只需修改这里
    ```
 
 2. **自动同步**：
@@ -292,4 +320,4 @@ Made with ♥️ by Oca John
 
 ---
 
-**XhinkingTodo 0.9.3** | 思考. 记录. 创造
+**XhinkingTodo 0.9.8** | 思考. 记录. 创造

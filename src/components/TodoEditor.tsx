@@ -50,11 +50,11 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
       colorTag,
       timeNodes
     });
-    
+
     try {
       await onSave(todo.id, {
         title,
-        details: details || null,
+        details: details,
         groupId,
         colorTag,
         timeNodes,
@@ -98,7 +98,7 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
     if ((e.nativeEvent as any).isComposing) {
       return;
     }
-    
+
     if (e.key === "Enter" && e.altKey && title.trim()) {
       e.preventDefault();
       handleSave();
@@ -109,23 +109,25 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
   };
 
   return (
-    <div 
+    <div
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
       onMouseEnter={(e) => e.stopPropagation()}
       onMouseMove={(e) => e.stopPropagation()}
     >
-      <div 
+      <div
         ref={dialogRef}
-        className="rounded-lg shadow-xl w-full max-w-[calc(100vw-8rem)] max-h-[min(75vh,640px)] overflow-hidden flex flex-col" 
+        className="rounded-lg shadow-xl w-full max-w-[calc(100vw-8rem)] max-h-[min(75vh,640px)] overflow-hidden flex flex-col"
         style={{ backgroundColor: 'var(--modal-bg)' }}
         onKeyDown={handleKeyDown}
         tabIndex={-1}
         onMouseDown={(e) => {
+          e.stopPropagation();
           // 防止点击对话框内部时重新聚焦到容器
           if (e.target === e.currentTarget) {
             e.preventDefault();
           }
         }}
+        onPointerDown={(e) => e.stopPropagation()}
         onMouseEnter={(e) => e.stopPropagation()}
         onMouseMove={(e) => e.stopPropagation()}
       >
@@ -156,6 +158,12 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
               placeholder={t("editor.title_placeholder", language)}
               onCompositionStart={(e) => e.stopPropagation()}
               onCompositionEnd={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                // 阻止Enter和Space键冒泡，防止触发对话框容器的键盘事件
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                }
+              }}
             />
           </div>
 
@@ -174,6 +182,16 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
               placeholder={t("editor.details_placeholder", language)}
               onCompositionStart={(e) => e.stopPropagation()}
               onCompositionEnd={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                // 阻止Space键冒泡，允许Enter换行，防止触发对话框容器的键盘事件
+                if (e.key === ' ') {
+                  e.stopPropagation();
+                }
+                // Enter键用于换行，但也要阻止冒泡
+                if (e.key === 'Enter' && !e.altKey) {
+                  e.stopPropagation();
+                }
+              }}
             />
           </div>
 
@@ -207,11 +225,10 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
                 <button
                   key={option.value}
                   onClick={() => setColorTag(option.value)}
-                  className={`px-3 py-2 rounded-md border-2 transition flex items-center gap-2 ${
-                    colorTag === option.value
+                  className={`px-3 py-2 rounded-md border-2 transition flex items-center gap-2 ${colorTag === option.value
                       ? "border-blue-500 bg-blue-50"
                       : "border-gray-300 hover:border-gray-400"
-                  }`}
+                    }`}
                 >
                   <div className={`w-4 h-4 rounded-full ${option.color}`} />
                   <span className="text-sm">{option.label}</span>
@@ -253,6 +270,12 @@ function TodoEditor({ todo, groups, language, onSave, onClose }: TodoEditorProps
                           placeholder="时间节点描述（可选）"
                           className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                           style={{ backgroundColor: 'var(--input-bg)' }}
+                          onKeyDown={(e) => {
+                            // 阻止Enter和Space键冒泡
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.stopPropagation();
+                            }
+                          }}
                         />
                       </div>
                       <button

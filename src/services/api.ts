@@ -26,7 +26,7 @@ export const api = {
     id: string,
     updates: {
       title?: string;
-      details?: string;
+      details?: string | null;
       groupId?: string;
       colorTag?: ColorTag;
       completed?: boolean;

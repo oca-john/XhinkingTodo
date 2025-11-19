@@ -61,33 +61,33 @@ function App() {
   // 监听窗口大小变化，在会话中记住用户调整
   useEffect(() => {
     let resizeTimeout: number | null = null;
-    
+
     const handleResize = async () => {
       // 只在窗口展开时更新位置
       if (!isCollapsed && !isPinned && !isAdjustingRef.current) {
         if (resizeTimeout) {
           clearTimeout(resizeTimeout);
         }
-        
+
         resizeTimeout = window.setTimeout(async () => {
           try {
             const currentPos = await api.getWindowPosition();
-            
+
             // 如果停靠在上边缘，保持右边缘位置固定
             if (dockedEdge === DockedEdge.Top && rightEdgeRef.current !== null) {
               const currentRightEdge = currentPos.x + currentPos.width;
               const rightEdgeDelta = currentRightEdge - rightEdgeRef.current;
-              
+
               // 如果右边缘位置变化了，需要调整x坐标
               if (Math.abs(rightEdgeDelta) > 1) { // 允许1px误差
                 isAdjustingRef.current = true;
-                
+
                 // 根据固定的右边缘位置计算新的x坐标
                 const newX = rightEdgeRef.current - currentPos.width;
                 await api.expandFromEdge(newX, currentPos.y, currentPos.width, currentPos.height);
                 currentPos.x = newX;
                 console.log(`上边缘停靠：右边缘保持在${rightEdgeRef.current}，x调整为${newX}`);
-                
+
                 setTimeout(() => {
                   isAdjustingRef.current = false;
                 }, 100);
@@ -96,7 +96,7 @@ function App() {
                 rightEdgeRef.current = currentRightEdge;
               }
             }
-            
+
             const newPosition = {
               x: currentPos.x,
               y: currentPos.y,
@@ -104,7 +104,7 @@ function App() {
               height: currentPos.height,
             };
             setExpandedPosition(newPosition);
-            
+
             // 如果开启了记住窗口大小，保存到设置中
             if (appData && appData.settings.remember_window_size) {
               await handleUpdateSettings({
@@ -123,7 +123,7 @@ function App() {
     };
 
     window.addEventListener('resize', handleResize);
-    
+
     return () => {
       window.removeEventListener('resize', handleResize);
       if (resizeTimeout) {
@@ -137,9 +137,9 @@ function App() {
     try {
       const [monitorX, monitorY, monitorWidth, monitorHeight] = await api.getMonitorInfo();
       const currentPos = await api.getWindowPosition();
-      
+
       let defaultX, defaultY, defaultWidth, defaultHeight;
-      
+
       // 如果开启了记住窗口大小且有保存的位置，使用保存的值
       if (appData && appData.settings.remember_window_size && appData.settings.window_position) {
         const saved = appData.settings.window_position;
@@ -168,14 +168,14 @@ function App() {
         const rightMargin = monitorWidth / 80;    // 右侧边距
         const topMargin = monitorHeight / 45;     // 上侧边距
         const margin = Math.min(rightMargin, topMargin);  // 取较小值，确保在不同比例屏幕上都合适
-        
+
         // 窗口默认高度为屏幕高度的三分之二
         defaultHeight = Math.floor(monitorHeight * 2 / 3);
         defaultWidth = currentPos.width;
         defaultX = monitorX + monitorWidth - defaultWidth - margin;
         defaultY = monitorY + margin;
       }
-      
+
       // 保存展开状态的位置和尺寸
       const position = {
         x: Math.floor(defaultX),
@@ -184,11 +184,11 @@ function App() {
         height: Math.floor(defaultHeight),
       };
       setExpandedPosition(position);
-      
+
       // 初始化右边缘位置
       rightEdgeRef.current = position.x + position.width;
       console.log('窗口初始化，右边缘位置:', rightEdgeRef.current);
-      
+
       // 默认停靠到右侧，折叠状态（使用正确的窗口尺寸）
       await api.collapseToEdge(
         dockedEdge,
@@ -225,7 +225,7 @@ function App() {
     try {
       // 创建待办
       let newTodo = await api.createTodo(data.title, data.details, data.groupId, data.colorTag);
-      
+
       // 添加时间节点
       for (const timeNode of data.timeNodes) {
         await api.addTimeNode(
@@ -236,7 +236,7 @@ function App() {
           timeNode.reminder_minutes_before
         );
       }
-      
+
       // 重新获取待办，以获取添加的时间节点
       if (data.timeNodes.length > 0) {
         const refreshedData = await api.getAllData();
@@ -245,7 +245,7 @@ function App() {
           newTodo = refreshedTodo;
         }
       }
-      
+
       setAppData({
         ...appData,
         todos: [...appData.todos, newTodo],
@@ -268,24 +268,24 @@ function App() {
       console.log('=== handleUpdateTodo START ===');
       console.log('Todo ID:', id);
       console.log('Updates:', updates);
-      
+
       const currentTodo = appData.todos.find(t => t.id === id);
       if (!currentTodo) {
         console.error('Todo not found:', id);
         return;
       }
-      
+
       // 第1步：更新基本字段
       console.log('Step 1: Updating basic fields...');
       await api.updateTodo(id, {
         title: updates.title,
-        details: updates.details !== undefined ? updates.details || undefined : undefined,
+        details: updates.details,
         groupId: updates.groupId,
         colorTag: updates.colorTag,
         completed: updates.completed,
       });
       console.log('Basic fields updated successfully');
-      
+
       // 如果只是更新completed状态，跳过时间节点处理
       if (!updates.timeNodes) {
         console.log('No time nodes to update, refreshing data...');
@@ -294,19 +294,19 @@ function App() {
         console.log('=== handleUpdateTodo COMPLETE (simple update) ===');
         return;
       }
-      
+
       // 第2步：处理时间节点删除
       console.log('Step 2: Processing time node deletions...');
       const currentNodeIds = new Set(currentTodo.time_nodes.map(n => n.id));
       const newNodeMap = new Map(updates.timeNodes.map(n => [n.id, n]));
-      
+
       for (const node of currentTodo.time_nodes) {
         if (!newNodeMap.has(node.id)) {
           console.log('  Deleting node:', node.id);
           await api.deleteTimeNode(node.id);
         }
       }
-      
+
       // 第3步：处理时间节点更新
       console.log('Step 3: Processing time node updates...');
       for (const node of updates.timeNodes) {
@@ -321,7 +321,7 @@ function App() {
           );
         }
       }
-      
+
       // 第4步：处理新增时间节点
       console.log('Step 4: Processing new time nodes...');
       for (const node of updates.timeNodes) {
@@ -336,24 +336,24 @@ function App() {
           );
         }
       }
-      
+
       // 第5步：重新获取完整数据
       console.log('Step 5: Refreshing all data...');
       const refreshedData = await api.getAllData();
       const refreshedTodo = refreshedData.todos.find(t => t.id === id);
-      
+
       if (!refreshedTodo) {
         console.error('Todo not found after refresh:', id);
         return;
       }
-      
+
       console.log('Refreshed todo:', refreshedTodo);
-      
+
       // 采用删除-重建策略：先从状态中移除旧项，再添加新项
       // 这样强制React完全重新渲染组件，避免状态缓存问题
       console.log('Step 6: Removing old todo from state...');
       const todosWithoutOld = refreshedData.todos.filter(t => t.id !== id);
-      
+
       console.log('Step 7: Re-adding updated todo...');
       const reorderedTodos = [...todosWithoutOld];
       // 找到原来的位置，插入更新后的todo
@@ -363,13 +363,13 @@ function App() {
       } else {
         reorderedTodos.push(refreshedTodo);
       }
-      
+
       console.log('Step 8: Setting new state with rebuilt todo list...');
       setAppData({
         ...refreshedData,
         todos: reorderedTodos
       });
-      
+
       console.log('=== handleUpdateTodo COMPLETE ===');
     } catch (error) {
       console.error('=== handleUpdateTodo ERROR ===');
@@ -450,7 +450,7 @@ function App() {
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
     }
-    
+
     // 只在未钉住且折叠时展开
     if (!isPinned && isCollapsed && expandedPosition) {
       try {
@@ -474,19 +474,19 @@ function App() {
       console.log('窗口已钉住，忽略指示器离开事件');
       return;
     }
-    
+
     // 延迟500毫秒后折叠
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
     }
-    
+
     collapseTimeoutRef.current = window.setTimeout(async () => {
       // 【钉住权限最高】双重检查isPinned状态
       if (isPinned) {
         console.log('窗口已钉住，取消延迟折叠');
         return;
       }
-      
+
       if (!isCollapsed && expandedPosition) {
         try {
           await api.collapseToEdge(
@@ -524,7 +524,7 @@ function App() {
     if (collapseTimeoutRef.current) {
       clearTimeout(collapseTimeoutRef.current);
     }
-    
+
     // 延迟500毫秒后检查鼠标位置再决定是否折叠
     collapseTimeoutRef.current = window.setTimeout(async () => {
       // 【钉住权限最高】双重检查isPinned状态
@@ -532,7 +532,7 @@ function App() {
         console.log('窗口已钉住，取消延迟折叠');
         return;
       }
-      
+
       if (!isCollapsed && expandedPosition) {
         try {
           // 检查鼠标是否仍在窗口内
@@ -559,7 +559,7 @@ function App() {
   const handlePinToggle = async () => {
     const newPinnedState = !isPinned;
     setIsPinned(newPinnedState);
-    
+
     if (newPinnedState) {
       // 钉住：取消折叠定时器并展开窗口
       if (collapseTimeoutRef.current) {
@@ -593,13 +593,13 @@ function App() {
   const handleToggleDockEdge = async () => {
     const newEdge = dockedEdge === DockedEdge.Right ? DockedEdge.Top : DockedEdge.Right;
     setDockedEdge(newEdge);
-    
+
     // 【钉住权限最高】如果窗口已钉住，只切换停靠边，不折叠窗口
     if (isPinned) {
       console.log('窗口已钉住，只切换停靠边，不折叠');
       return;
     }
-    
+
     // 如果当前是折叠状态，需要先展开，再重新停靠
     if (isCollapsed && expandedPosition) {
       try {
@@ -611,7 +611,7 @@ function App() {
           expandedPosition.height
         );
         setIsCollapsed(false);
-        
+
         // 稍后重新折叠到新位置（再次检查isPinned）
         setTimeout(async () => {
           // 【二次确认钉住状态】防止在延迟期间窗口被钉住
@@ -619,7 +619,7 @@ function App() {
             console.log('延迟期间窗口被钉住，取消折叠');
             return;
           }
-          
+
           try {
             const [monitorX, monitorY, monitorWidth, monitorHeight] = await api.getMonitorInfo();
             const centerY = monitorY + (monitorHeight - expandedPosition.height) / 2;
@@ -690,13 +690,13 @@ function App() {
     if (selectedView === "group" && selectedGroupId) {
       if (todo.group_id !== selectedGroupId) return false;
     }
-    
+
     // 根据设置筛选已完成项
     if (appData.settings.hide_completed && todo.completed) return false;
-    
+
     // 筛选归档和隐藏项
     if (todo.archived || todo.hidden) return false;
-    
+
     // 搜索筛选
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
@@ -705,12 +705,12 @@ function App() {
         (todo.details && todo.details.toLowerCase().includes(query))
       );
     }
-    
+
     return true;
   });
 
   return (
-    <div 
+    <div
       className={`flex flex-col h-screen ${getThemeClass(appData.settings.theme)} relative`}
       onMouseEnter={handleWindowMouseEnter}
       onMouseLeave={handleWindowMouseLeave}
@@ -723,7 +723,7 @@ function App() {
           onLeave={handleIndicatorLeave}
         />
       )}
-      
+
       {/* 主窗口内容 - 在折叠时不显示 */}
       {!isCollapsed && (
         <>

@@ -1,6 +1,6 @@
 [package]
 name = "xhinking-todo"
-version = "0.9.3"
+version = "0.9.8"
 description = "A modern desktop todo application"
 authors = ["you"]
 license = ""

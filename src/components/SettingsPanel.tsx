@@ -1,6 +1,6 @@
 import { AppSettings, Theme, Language } from "../types";
 import { t } from "../i18n";
-import { dialog } from "@tauri-apps/api";
+import { dialog, path } from "@tauri-apps/api";
 import { api } from "../services/api";
 import { APP_VERSION, APP_NAME } from "../version";
 
@@ -105,9 +105,13 @@ function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }:
 
   const handleExportData = async () => {
     try {
+      // 获取用户文档目录
+      const documentsDir = await path.documentDir();
+      const defaultPath = await path.join(documentsDir, "xhinking-todo-data.json");
+      
       const selected = await dialog.save({
         title: t("settings.export_data", language),
-        defaultPath: "xhinking-todo-data.json",
+        defaultPath: defaultPath,
         filters: [{
           name: "JSON",
           extensions: ["json"]
@@ -126,8 +130,12 @@ function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }:
 
   const handleImportData = async () => {
     try {
+      // 获取用户文档目录作为默认路径
+      const documentsDir = await path.documentDir();
+      
       const selected = await dialog.open({
         title: t("settings.import_data", language),
+        defaultPath: documentsDir,
         filters: [{
           name: "JSON",
           extensions: ["json"]

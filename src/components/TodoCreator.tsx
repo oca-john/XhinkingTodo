@@ -171,6 +171,16 @@ function TodoCreator({ groups, language, defaultGroupId, onCreate, onCancel }: T
               className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
               style={{ backgroundColor: 'var(--input-bg)', color: 'var(--text-primary)' }}
               rows={3}
+              onKeyDown={(e) => {
+                // 阻止Space键冒泡，允许Enter换行
+                if (e.key === ' ') {
+                  e.stopPropagation();
+                }
+                // Enter键用于换行，但也要阻止冒泡
+                if (e.key === 'Enter' && !e.altKey) {
+                  e.stopPropagation();
+                }
+              }}
             />
           </div>
 
@@ -255,6 +265,12 @@ function TodoCreator({ groups, language, defaultGroupId, onCreate, onCancel }: T
                       placeholder="时间节点描述（可选）"
                       className="w-full px-2 py-1 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                       style={{ backgroundColor: 'var(--input-bg)' }}
+                      onKeyDown={(e) => {
+                        // 阻止Enter和Space键冒泡
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.stopPropagation();
+                        }
+                      }}
                     />
                   </div>
                   <button

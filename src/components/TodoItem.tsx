@@ -81,18 +81,28 @@ function TodoItemComponent({
     setIsExpanded(!isExpanded);
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // 阻止空格和Enter键的默认行为，防止触发意外的点击或焦点变化
+    // 但保留dnd-kit的键盘拖拽功能（通常使用方向键）
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
       {...attributes}
       {...listeners}
       onClick={handleClick}
+      onKeyDown={handleKeyDown}
       style={{
         ...style,
         backgroundColor: todo.completed ? 'var(--bg-secondary)' : 'var(--card-bg)',
         cursor: isDragging ? 'grabbing' : 'grab',
       }}
-      className={`border rounded-lg p-3 transition-all duration-200 hover:shadow-md ${
+      className={`border rounded-lg p-3 transition-all duration-200 hover:shadow-md focus:outline-none ${
         todo.completed ? "opacity-75" : ""
       } ${
         isDragging ? "scale-105 shadow-2xl" : ""

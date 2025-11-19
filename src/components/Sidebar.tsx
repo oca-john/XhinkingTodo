@@ -302,6 +302,22 @@ function Sidebar({
             onClick={(e) => e.stopPropagation()}
             onMouseEnter={(e) => e.stopPropagation()}
             onMouseMove={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                handleDialogConfirm();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                handleDialogCancel();
+              }
+            }}
+            tabIndex={-1} // Make div focusable to catch key events
+            ref={(el) => {
+              // Auto focus the dialog container if not in create/edit mode (where input is focused)
+              if (el && dialogType === 'delete') {
+                el.focus();
+              }
+            }}
           >
             <div className="flex items-center justify-between px-4 py-3 border-b">
               <h3 className="font-semibold">
@@ -327,15 +343,6 @@ function Sidebar({
                     placeholder={t("dialog.group_name_placeholder", language)}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     style={{ backgroundColor: 'var(--input-bg)' }}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && e.altKey && !e.nativeEvent.isComposing) {
-                        e.preventDefault();
-                        handleDialogConfirm();
-                      } else if (e.key === 'Escape') {
-                        e.preventDefault();
-                        handleDialogCancel();
-                      }
-                    }}
                     onCompositionStart={(e) => {
                       e.stopPropagation();
                     }}
@@ -365,7 +372,7 @@ function Sidebar({
                   dialogType === 'delete' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
                 }`}
               >
-                {dialogType === 'delete' ? `${t("button.delete", language)} (Alt+Enter)` : `${t("button.confirm", language)} (Alt+Enter)`}
+                {dialogType === 'delete' ? `${t("button.delete", language)} (Enter)` : `${t("button.confirm", language)} (Enter)`}
               </button>
             </div>
           </div>
