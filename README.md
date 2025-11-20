@@ -2,7 +2,7 @@
 
 一个现代化的桌面待办事项应用，基于 Tauri + Rust + React 构建。
 
-![Version](https://img.shields.io/badge/version-0.9.8-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)
 
@@ -91,7 +91,7 @@ npm run tauri:build
 本项目已配置 GitHub Actions 自动化构建：
 
 **自动触发**：
-- 推送版本标签（如 `v0.9.8`）自动构建并发布
+- 推送版本标签（如 `v-1.0.0`）自动构建并发布
 - 生成 Windows/Linux 双平台安装包
 - Linux 生成 `.rpm`（openSUSE/Fedora）和 `.AppImage`（通用）双格式
 
@@ -231,7 +231,7 @@ XhinkingTodo-rust/
 1. **修改版本号**：
    编辑 `src/version.ts` 中的版本号：
    ```typescript
-   export const APP_VERSION = "0.9.8";  // 只需修改这里
+   export const APP_VERSION = "1.0.0";  // 只需修改这里
    ```
 
 2. **自动同步**：
@@ -335,4 +335,4 @@ Made with ♥️ by Oca John
 
 ---
 
-**XhinkingTodo 0.9.8** | 思考. 记录. 创造
+**XhinkingTodo 1.0.0** | 思考. 记录. 创造
