@@ -11,8 +11,8 @@
 ### 核心功能
 - ✅ **待办管理**：创建、编辑、删除、完成待办事项
 - 📁 **分组管理**：自定义分组，拖拽排序
-- 🏷️ **颜色标签**：7 级颜色标签（红橙黄绿青蓝紫）
-- ⏰ **时间节点**：为待办添加多个时间点和提醒
+- 🏷️ **颜色标签**：7 级颜色标签（红橙黄绿青蓝紫）表示紧急程度
+- ⏰ **多时间节点**：为待办添加多个时间点和提醒
 - 🔍 **快速搜索**：实时搜索待办内容
 
 ### 窗口管理
@@ -147,11 +147,8 @@ XhinkingTodo-rust/
 │   ├── Cargo.toml               # Rust 依赖配置
 │   └── tauri.conf.json          # Tauri 配置
 ├── scripts/                      # 工具脚本
-│   └── sync-version.cjs         # 版本号同步脚本
-├── tools-temp/                   # 临时工具（开发用）
-
 │   ├── generate_ico.py          # Windows 图标生成
-│   └── generate_icons.py        # 通用图标生成
+│   └── sync-version.cjs         # 版本号同步脚本
 ├── package.json                 # Node.js 配置
 ├── tsconfig.json                # TypeScript 配置
 ├── tailwind.config.js           # TailwindCSS 配置
@@ -182,12 +179,14 @@ XhinkingTodo-rust/
 1. **新建待办**：
    - 点击顶部"新建待办"按钮
    - 输入标题后按 Enter 展开详细选项
-   - 再次按 Enter 确认创建
+   - 详情文本框支持 Enter 折行
+   - Alt + Enter 确认创建，Esc 取消
 
 2. **编辑待办**：
    - 点击待办项展开详情
    - 点击"编辑"按钮
-   - Enter 确认，Esc 取消
+   - 详情文本框支持 Enter 折行
+   - Alt + Enter 确认，Esc 取消
 
 3. **分组管理**：
    - 点击左侧"新建分组"
@@ -309,7 +308,7 @@ npm install
 
 **图标显示异常**：
 - 图标资源在 `src-tauri/icons/` 目录
-- 可使用 `tools-temp/` 中的脚本重新生成
+- 可使用 `scripts/` 中的脚本重新生成
 
 ### 数据问题
 
