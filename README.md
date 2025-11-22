@@ -93,11 +93,11 @@ npm run tauri:build
 **自动触发**：
 - 推送版本标签（如 `v-1.0.0`）自动构建并发布
 - 生成 Windows/Linux 双平台安装包
-- Linux 生成 `.rpm`（openSUSE/Fedora）和 `.AppImage`（通用）双格式
+- Linux 生成 `.rpm`（openSUSE/Fedora）、.deb （Debian, Ubuntu）和 `.AppImage`（通用）等格式
 
 **Linux 发行版支持**：
 - 🥇 首要支持：openSUSE (.rpm)
-- 🥈 次要支持：Fedora (.rpm)
+- 🥈 次要支持：Fedora (.rpm), Debian (.deb), Ubuntu (.deb)
 - ⚙️ 通用支持：其他发行版使用 AppImage
 
 **构建优化**：
