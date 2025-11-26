@@ -5,6 +5,7 @@
  * - package.json
  * - src-tauri/Cargo.toml
  * - src-tauri/tauri.conf.json
+ * - README.md
  * 
  * 使用方法：node scripts/sync-version.js
  */
@@ -64,6 +65,33 @@ function updateTauriConfig(version) {
   console.log(`✅ 已更新 tauri.conf.json 版本号为: ${version}`);
 }
 
+// 更新 README.md
+function updateReadme(version) {
+  const filePath = path.join(__dirname, '../README.md');
+  let content = fs.readFileSync(filePath, 'utf-8');
+  
+  // 更新版本徽章
+  content = content.replace(
+    /!\[Version\]\(https:\/\/img\.shields\.io\/badge\/version-.+?-blue\.svg\)/,
+    `![Version](https://img.shields.io/badge/version-${version}-blue.svg)`
+  );
+  
+  // 更新底部版本号
+  content = content.replace(
+    /\*\*XhinkingTodo [\d.]+\*\* \| 思考\. 记录\. 创造/,
+    `**XhinkingTodo ${version}** | 思考. 记录. 创造`
+  );
+  
+  // 更新示例代码中的版本号
+  content = content.replace(
+    /export const APP_VERSION = "[\d.]+";  \/\/ 只需修改这里/,
+    `export const APP_VERSION = "${version}";  // 只需修改这里`
+  );
+  
+  fs.writeFileSync(filePath, content, 'utf-8');
+  console.log(`✅ 已更新 README.md 版本号为: ${version}`);
+}
+
 // 主函数
 function main() {
   try {
@@ -75,6 +103,7 @@ function main() {
     updatePackageJson(version);
     updateCargoToml(version);
     updateTauriConfig(version);
+    updateReadme(version);
     
     console.log('\n✨ 版本号同步完成！');
     console.log('\n💡 提示：');

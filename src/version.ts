@@ -15,6 +15,7 @@
  *    - package.json
  *    - src-tauri/Cargo.toml
  *    - src-tauri/tauri.conf.json
+ *    - README.md
  * 
  * 前端代码已自动引用此文件：
  *    - App.tsx (底部信息栏)
@@ -22,6 +23,6 @@
  *    - SettingsPanel.tsx (设置页面)
  */
 
-export const APP_VERSION = "1.0.1";
+export const APP_VERSION = "1.0.2";
 export const APP_NAME = "XhinkingTodo";
 export const APP_AUTHOR = "Oca John";

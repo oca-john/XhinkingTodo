@@ -256,6 +256,28 @@ function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }:
                 className="w-5 h-5 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
               />
             </label>
+          </div>
+        </section>
+
+        {/* Startup Settings */}
+        <section>
+          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
+            <span className="text-base">🚀</span>
+            {t("settings.startup_section", language)}
+          </h3>
+          <div className="space-y-3">
+            <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
+              <div>
+                <div className="text-xs font-medium">{t("settings.auto_start", language)}</div>
+                <div className="text-[10px] text-gray-600">{language === Language.SimplifiedChinese || language === Language.TraditionalChinese ? "系统启动时自动运行应用" : "Launch app automatically when system starts"}</div>
+              </div>
+              <input
+                type="checkbox"
+                checked={settings.auto_start}
+                onChange={handleToggleAutoStart}
+                className="w-5 h-5 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
+              />
+            </label>
             <div className="p-4 bg-gray-50 rounded-lg">
               <div className="text-xs font-medium mb-3">{t("settings.default_docked_edge", language)}</div>
               <div className="flex gap-3">
@@ -281,28 +303,6 @@ function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }:
                 </button>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* Startup Settings */}
-        <section>
-          <h3 className="text-sm font-semibold mb-4 flex items-center gap-2">
-            <span className="text-base">🚀</span>
-            {t("settings.startup_section", language)}
-          </h3>
-          <div className="space-y-3">
-            <label className="flex items-center justify-between p-4 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition">
-              <div>
-                <div className="text-xs font-medium">{t("settings.auto_start", language)}</div>
-                <div className="text-[10px] text-gray-600">{language === Language.SimplifiedChinese || language === Language.TraditionalChinese ? "系统启动时自动运行应用" : "Launch app automatically when system starts"}</div>
-              </div>
-              <input
-                type="checkbox"
-                checked={settings.auto_start}
-                onChange={handleToggleAutoStart}
-                className="w-5 h-5 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
-              />
-            </label>
           </div>
         </section>
 

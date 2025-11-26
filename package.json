@@ -1,6 +1,6 @@
 {
   "name": "xhinking-todo",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A modern desktop todo application built with Tauri and Rust",
   "private": true,
   "type": "module",
