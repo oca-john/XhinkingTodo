@@ -158,4 +158,13 @@ export const api = {
   isMouseInWindow: async (): Promise<boolean> => {
     return await invoke("is_mouse_in_window");
   },
+
+  // Linux first-run setup
+  isLinuxFirstRun: async (): Promise<boolean> => {
+    return await invoke("is_linux_first_run");
+  },
+
+  setupLinuxAutostart: async (): Promise<boolean> => {
+    return await invoke("setup_linux_autostart");
+  },
 };

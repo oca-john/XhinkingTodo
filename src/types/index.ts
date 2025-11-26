@@ -88,6 +88,7 @@ export interface AppSettings {
   hide_completed: boolean;
   remember_window_size: boolean;
   window_position: WindowPosition;
+  default_docked_edge: DockedEdge;
 }
 
 export interface AppData {

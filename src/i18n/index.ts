@@ -10,6 +10,7 @@ const translations: Record<Language, TranslationMap> = {
     "nav.all_todos": "所有待办",
     "nav.todo_management": "待办分组",
     "nav.new_group": "新建分组",
+    "nav.completed": "已完成",
     "nav.settings": "设置",
     "nav.about": "关于",
     "group.personal": "个人",
@@ -107,6 +108,9 @@ const translations: Record<Language, TranslationMap> = {
     "settings.remember_window_size": "记住窗口大小",
     "settings.remember_window_size_desc": "重新打开应用时恢复上次的窗口大小",
     "settings.reset_window_size": "重置窗口大小",
+    "settings.default_docked_edge": "默认停靠位置",
+    "settings.dock_right": "右侧",
+    "settings.dock_top": "顶部",
   },
   [Language.TraditionalChinese]: {
     "app.title": "思考待辦",
@@ -114,6 +118,7 @@ const translations: Record<Language, TranslationMap> = {
     "nav.all_todos": "所有待辦",
     "nav.todo_management": "待辦分組",
     "nav.new_group": "新建分組",
+    "nav.completed": "已完成",
     "nav.settings": "設定",
     "nav.about": "關於",
     "group.personal": "個人",
@@ -211,6 +216,9 @@ const translations: Record<Language, TranslationMap> = {
     "settings.remember_window_size": "記住窗口大小",
     "settings.remember_window_size_desc": "重新打開應用時恢復上次的窗口大小",
     "settings.reset_window_size": "重置窗口大小",
+    "settings.default_docked_edge": "默認停靠位置",
+    "settings.dock_right": "右側",
+    "settings.dock_top": "頂部",
   },
   [Language.English]: {
     "app.title": "XhinkingTodo",
@@ -218,6 +226,7 @@ const translations: Record<Language, TranslationMap> = {
     "nav.all_todos": "All Todos",
     "nav.todo_management": "GROUPS",
     "nav.new_group": "New Group",
+    "nav.completed": "Completed",
     "nav.settings": "Settings",
     "nav.about": "About",
     "group.personal": "Personal",
@@ -315,6 +324,9 @@ const translations: Record<Language, TranslationMap> = {
     "settings.remember_window_size": "Remember Window Size",
     "settings.remember_window_size_desc": "Restore previous window size when reopening app",
     "settings.reset_window_size": "Reset Window Size",
+    "settings.default_docked_edge": "Default Dock Position",
+    "settings.dock_right": "Right",
+    "settings.dock_top": "Top",
   },
 };
 

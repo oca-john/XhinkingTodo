@@ -4,6 +4,10 @@ use std::sync::Mutex;
 use tauri::{State, Window, PhysicalPosition};
 use chrono::Utc;
 use auto_launch::AutoLaunch;
+#[cfg(target_os = "linux")]
+use std::fs;
+#[cfg(target_os = "linux")]
+use std::path::PathBuf;
 
 pub struct AppState {
     pub data: Mutex<AppData>,
@@ -571,14 +575,21 @@ pub fn collapse_to_edge(
     match edge {
         DockedEdge::Right => {
             // 右侧停靠：宽度变为2px，保持高度，移到屏幕右边缘内侧
-            // Linux 需要先设置大小再设置位置，以确保正确计算
+            // Linux 需要先设置大小，等待窗口管理器处理，再设置位置
             #[cfg(target_os = "linux")]
             {
                 window.set_size(tauri::PhysicalSize::new(INDICATOR_THICKNESS, window_height))
                     .map_err(|e| format!("Failed to set window size: {}", e))?;
+                // 等待窗口管理器处理大小变更
+                std::thread::sleep(std::time::Duration::from_millis(50));
+                // Linux上直接使用显示器右边缘减去指示器宽度
                 let new_x = monitor_pos.x + monitor_size.width as i32 - INDICATOR_THICKNESS as i32;
                 window.set_position(PhysicalPosition::new(new_x, window_y))
                     .map_err(|e| format!("Failed to set window position: {}", e))?;
+                // 再次确认位置（某些窗口管理器可能需要）
+                std::thread::sleep(std::time::Duration::from_millis(20));
+                window.set_position(PhysicalPosition::new(new_x, window_y))
+                    .map_err(|e| format!("Failed to set window position (retry): {}", e))?;
             }
             
             // Windows 保持原有逻辑：先设置位置再设置大小
@@ -697,4 +708,89 @@ pub fn is_mouse_in_window(window: Window) -> Result<bool, String> {
     // 其他平台默认返回false
     #[cfg(not(any(target_os = "windows", target_os = "linux")))]
     Ok(false)
+}
+
+/// Linux first-run setup: create systemd user service for auto-start
+#[tauri::command]
+pub fn setup_linux_autostart() -> Result<bool, String> {
+    #[cfg(target_os = "linux")]
+    {
+        let home_dir = std::env::var("HOME")
+            .map_err(|_| "Failed to get HOME directory")?;
+        
+        let systemd_user_dir = PathBuf::from(&home_dir).join(".config/systemd/user");
+        
+        // Create systemd user directory if it doesn't exist
+        if !systemd_user_dir.exists() {
+            fs::create_dir_all(&systemd_user_dir)
+                .map_err(|e| format!("Failed to create systemd user directory: {}", e))?;
+        }
+        
+        let service_file = systemd_user_dir.join("xhinking-todo.service");
+        
+        // Check if service already exists
+        if service_file.exists() {
+            return Ok(false); // Already set up
+        }
+        
+        let exe_path = std::env::current_exe()
+            .map_err(|e| format!("Failed to get executable path: {}", e))?;
+        
+        let service_content = format!(
+r#"[Unit]
+Description=XhinkingTodo - Desktop Todo Application
+After=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart={}
+Restart=on-failure
+RestartSec=5
+Environment=DISPLAY=:0
+
+[Install]
+WantedBy=default.target
+"#, exe_path.display());
+
+        fs::write(&service_file, service_content)
+            .map_err(|e| format!("Failed to write service file: {}", e))?;
+        
+        // Enable the service using systemctl
+        let output = std::process::Command::new("systemctl")
+            .args(["--user", "enable", "xhinking-todo.service"])
+            .output()
+            .map_err(|e| format!("Failed to enable service: {}", e))?;
+        
+        if !output.status.success() {
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            return Err(format!("Failed to enable systemd service: {}", stderr));
+        }
+        
+        Ok(true) // Successfully set up
+    }
+    
+    #[cfg(not(target_os = "linux"))]
+    {
+        Ok(false) // Not applicable on non-Linux
+    }
+}
+
+/// Check if this is the first run on Linux
+#[tauri::command]
+pub fn is_linux_first_run() -> Result<bool, String> {
+    #[cfg(target_os = "linux")]
+    {
+        let home_dir = std::env::var("HOME")
+            .map_err(|_| "Failed to get HOME directory")?;
+        
+        let service_file = PathBuf::from(&home_dir)
+            .join(".config/systemd/user/xhinking-todo.service");
+        
+        Ok(!service_file.exists())
+    }
+    
+    #[cfg(not(target_os = "linux"))]
+    {
+        Ok(false)
+    }
 }

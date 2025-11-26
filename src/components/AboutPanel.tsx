@@ -113,12 +113,6 @@ function AboutPanel({ language }: AboutPanelProps) {
               </code>
             </div>
             <div>
-              <div className="font-medium text-gray-700 mb-1">macOS</div>
-              <code className="block bg-gray-100 px-2 py-1.5 rounded border border-gray-300 text-xs break-all">
-                ~/Library/Application Support/com.xhinking.todo/data.json
-              </code>
-            </div>
-            <div>
               <div className="font-medium text-gray-700 mb-1">Linux</div>
               <code className="block bg-gray-100 px-2 py-1.5 rounded border border-gray-300 text-xs break-all">
                 ~/.local/share/com.xhinking.todo/data.json

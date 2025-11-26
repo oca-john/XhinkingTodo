@@ -74,6 +74,12 @@ pub struct AppSettings {
     pub hide_completed: bool,
     pub remember_window_size: bool,
     pub window_position: WindowPosition,
+    #[serde(default = "default_docked_edge")]
+    pub default_docked_edge: DockedEdge,
+}
+
+fn default_docked_edge() -> DockedEdge {
+    DockedEdge::Right
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -134,6 +140,7 @@ impl Default for AppSettings {
                 height: 720.0,
                 docked_edge: Some(DockedEdge::Right),
             },
+            default_docked_edge: DockedEdge::Right,
         }
     }
 }

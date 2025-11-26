@@ -93,6 +93,8 @@ fn main() {
             collapse_to_edge,
             expand_from_edge,
             is_mouse_in_window,
+            setup_linux_autostart,
+            is_linux_first_run,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

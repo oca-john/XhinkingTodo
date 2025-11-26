@@ -8,7 +8,7 @@
   },
   "package": {
     "productName": "XhinkingTodo",
-    "version": "1.0.0"
+    "version": "1.0.1"
   },
   "tauri": {
     "allowlist": {
@@ -64,7 +64,7 @@
         "decorations": false,
         "transparent": true,
         "alwaysOnTop": true,
-        "skipTaskbar": false,
+        "skipTaskbar": true,
         "center": false,
         "x": 1400,
         "y": 100

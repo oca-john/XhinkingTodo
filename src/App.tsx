@@ -12,12 +12,12 @@ import { APP_VERSION, APP_NAME, APP_AUTHOR } from "./version";
 function App() {
   const [appData, setAppData] = useState<AppData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [selectedView, setSelectedView] = useState<"all" | "group" | "settings" | "about">("all");
+  const [selectedView, setSelectedView] = useState<"all" | "group" | "completed" | "settings" | "about">("all");
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isPinned, setIsPinned] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(true); // 默认折叠
-  const [dockedEdge, setDockedEdge] = useState<DockedEdge>(DockedEdge.Right); // 默认右侧停靠
+  const [dockedEdge, setDockedEdge] = useState<DockedEdge | null>(null); // 从设置加载后初始化
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true); // 导航栏折叠状态
   const [expandedPosition, setExpandedPosition] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   const [isDraggingTodo, setIsDraggingTodo] = useState(false); // 拖动待办条目状态
@@ -43,10 +43,17 @@ function App() {
     loadData();
   }, []);
 
-  // 在数据加载完成后初始化窗口停靠
+  // 在数据加载完成后初始化停靠边和窗口位置
   useEffect(() => {
-    if (appData && !expandedPosition) {
-      initializeDocking();
+    if (appData) {
+      // 从设置加载默认停靠边（仅在首次加载时）
+      if (dockedEdge === null) {
+        setDockedEdge(appData.settings.default_docked_edge || DockedEdge.Right);
+      }
+      // 初始化窗口位置
+      if (!expandedPosition) {
+        initializeDocking();
+      }
     }
   }, [appData]);
 
@@ -189,9 +196,10 @@ function App() {
       rightEdgeRef.current = position.x + position.width;
       console.log('窗口初始化，右边缘位置:', rightEdgeRef.current);
 
-      // 默认停靠到右侧，折叠状态（使用正确的窗口尺寸）
+      // 默认停靠，折叠状态（使用正确的窗口尺寸）
+      const currentEdge = dockedEdge || appData?.settings.default_docked_edge || DockedEdge.Right;
       await api.collapseToEdge(
-        dockedEdge,
+        currentEdge,
         Math.floor(defaultY),
         Math.floor(defaultHeight),
         Math.floor(defaultX),
@@ -207,6 +215,21 @@ function App() {
     try {
       const data = await api.getAllData();
       setAppData(data);
+      
+      // Check for Linux first run and setup autostart
+      try {
+        const isFirstRun = await api.isLinuxFirstRun();
+        if (isFirstRun) {
+          console.log('Linux first run detected, setting up autostart...');
+          const success = await api.setupLinuxAutostart();
+          if (success) {
+            console.log('Linux autostart service created successfully');
+          }
+        }
+      } catch (e) {
+        // Not on Linux or setup failed, ignore
+        console.log('Linux first run check skipped:', e);
+      }
     } catch (error) {
       console.error("Failed to load data:", error);
     } finally {
@@ -489,8 +512,9 @@ function App() {
 
       if (!isCollapsed && expandedPosition) {
         try {
+          const currentEdge = dockedEdge || DockedEdge.Right;
           await api.collapseToEdge(
-            dockedEdge,
+            currentEdge,
             expandedPosition.y,
             expandedPosition.height,
             expandedPosition.x,
@@ -539,8 +563,9 @@ function App() {
           const mouseInWindow = await api.isMouseInWindow();
           if (!mouseInWindow) {
             // 鼠标确实离开了窗口，执行折叠
+            const currentEdge = dockedEdge || DockedEdge.Right;
             await api.collapseToEdge(
-              dockedEdge,
+              currentEdge,
               expandedPosition.y,
               expandedPosition.height,
               expandedPosition.x,
@@ -686,12 +711,28 @@ function App() {
   };
 
   const filteredTodos = appData.todos.filter((todo) => {
+    // "已完成"视图：只显示已完成的待办
+    if (selectedView === "completed") {
+      if (!todo.completed) return false;
+      // 仍然过滤归档和隐藏项
+      if (todo.archived || todo.hidden) return false;
+      // 搜索筛选
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        return (
+          todo.title.toLowerCase().includes(query) ||
+          (todo.details && todo.details.toLowerCase().includes(query))
+        );
+      }
+      return true;
+    }
+
     // 根据视图筛选
     if (selectedView === "group" && selectedGroupId) {
       if (todo.group_id !== selectedGroupId) return false;
     }
 
-    // 根据设置筛选已完成项
+    // 根据设置筛选已完成项（在非"已完成"视图中隐藏已完成项）
     if (appData.settings.hide_completed && todo.completed) return false;
 
     // 筛选归档和隐藏项
@@ -716,7 +757,7 @@ function App() {
       onMouseLeave={handleWindowMouseLeave}
     >
       {/* 动态彩色渐变指示器 - 只在窗口折叠时显示 */}
-      {isCollapsed && (
+      {isCollapsed && dockedEdge && (
         <DockIndicator
           edge={dockedEdge}
           onHover={handleIndicatorHover}
@@ -739,11 +780,13 @@ function App() {
           <div className="flex flex-1 overflow-hidden">
             <Sidebar
               groups={appData.groups}
+              todos={appData.todos}
               language={appData.settings.language}
               selectedView={selectedView}
               selectedGroupId={selectedGroupId}
               onSelectAll={() => setSelectedView("all")}
               onSelectGroup={handleSelectGroup}
+              onSelectCompleted={() => setSelectedView("completed")}
               onSelectSettings={() => setSelectedView("settings")}
               onSelectAbout={() => setSelectedView("about")}
               onCreateGroup={handleCreateGroup}

@@ -1,8 +1,9 @@
-import { AppSettings, Theme, Language } from "../types";
+import { AppSettings, Theme, Language, DockedEdge } from "../types";
 import { t } from "../i18n";
-import { dialog, path } from "@tauri-apps/api";
+import { dialog, path, os } from "@tauri-apps/api";
 import { api } from "../services/api";
 import { APP_VERSION, APP_NAME } from "../version";
+import { useState, useEffect } from "react";
 
 interface SettingsPanelProps {
   settings: AppSettings;
@@ -35,6 +36,19 @@ const languageOptions = [
 
 function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }: SettingsPanelProps) {
   const language = settings.language;
+  const [osType, setOsType] = useState<string>("Windows_NT");
+
+  useEffect(() => {
+    os.type().then(setOsType).catch(() => setOsType("Windows_NT"));
+  }, []);
+
+  const getDataLocationPath = () => {
+    if (osType === "Linux") {
+      return "~/.local/share/com.xhinking.todo/data.json";
+    }
+    return "%APPDATA%\\com.xhinking.todo\\data.json";
+  };
+
   const handleThemeChange = (theme: Theme) => {
     onUpdateSettings({ ...settings, theme });
   };
@@ -101,6 +115,10 @@ function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }:
       console.log('✅ 启用记住窗口大小');
       onUpdateSettings({ ...settings, remember_window_size: true });
     }
+  };
+
+  const handleDefaultDockedEdgeChange = (edge: DockedEdge) => {
+    onUpdateSettings({ ...settings, default_docked_edge: edge });
   };
 
   const handleExportData = async () => {
@@ -238,6 +256,31 @@ function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }:
                 className="w-5 h-5 text-blue-500 rounded focus:ring-2 focus:ring-blue-500"
               />
             </label>
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <div className="text-xs font-medium mb-3">{t("settings.default_docked_edge", language)}</div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleDefaultDockedEdgeChange(DockedEdge.Right)}
+                  className={`flex-1 px-4 py-2 rounded-lg border-2 transition text-xs font-medium ${
+                    settings.default_docked_edge === DockedEdge.Right
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  {t("settings.dock_right", language)}
+                </button>
+                <button
+                  onClick={() => handleDefaultDockedEdgeChange(DockedEdge.Top)}
+                  className={`flex-1 px-4 py-2 rounded-lg border-2 transition text-xs font-medium ${
+                    settings.default_docked_edge === DockedEdge.Top
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-gray-300 hover:bg-gray-100'
+                  }`}
+                >
+                  {t("settings.dock_top", language)}
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -274,7 +317,7 @@ function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }:
               <div className="text-sm text-gray-600 mb-3">
                 {t("settings.data_location", language)}:
                 <code className="block mt-1 p-2 bg-gray-100 border border-gray-300 rounded text-xs break-all">
-                  %APPDATA%\com.xhinking.todo\data.json
+                  {getDataLocationPath()}
                 </code>
               </div>
               <div className="flex gap-2">

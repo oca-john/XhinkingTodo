@@ -1,6 +1,6 @@
-import { CheckSquare, Settings, Info, Plus, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { CheckSquare, Settings, Info, Plus, ChevronLeft, ChevronRight, X, CheckCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
-import { TodoGroup, Language } from "../types";
+import { TodoGroup, TodoItem, Language } from "../types";
 import { t } from "../i18n";
 import {
   DndContext,
@@ -20,11 +20,13 @@ import { api } from "../services/api";
 
 interface SidebarProps {
   groups: TodoGroup[];
+  todos: TodoItem[];
   language: Language;
   selectedView: string;
   selectedGroupId: string | null;
   onSelectAll: () => void;
   onSelectGroup: (groupId: string) => void;
+  onSelectCompleted: () => void;
   onSelectSettings: () => void;
   onSelectAbout: () => void;
   onCreateGroup: (name: string) => void;
@@ -36,11 +38,13 @@ interface SidebarProps {
 
 function Sidebar({
   groups,
+  todos,
   language,
   selectedView,
   selectedGroupId,
   onSelectAll,
   onSelectGroup,
+  onSelectCompleted,
   onSelectSettings,
   onSelectAbout,
   onCreateGroup,
@@ -260,6 +264,25 @@ function Sidebar({
 
       {/* Bottom Section */}
       <div className="border-t border-gray-300">
+        {/* Completed Group - Special group with 60% opacity */}
+        <button
+          onClick={onSelectCompleted}
+          className={`w-full py-2 text-left flex items-center gap-2 hover:bg-gray-200 transition ${
+            selectedView === "completed" ? "bg-gray-200 font-semibold" : ""
+          } ${collapsed ? "justify-center" : "px-4"}`}
+          title={collapsed ? t("nav.completed", language) : ""}
+          style={{ opacity: selectedView === "completed" ? 1 : 0.6 }}
+        >
+          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+          {!collapsed && (
+            <span className="text-sm flex items-center gap-1">
+              {t("nav.completed", language)}
+              <span className="text-xs text-gray-500">
+                ({todos.filter(t => t.completed && !t.archived && !t.hidden).length})
+              </span>
+            </span>
+          )}
+        </button>
         <button
           onClick={onSelectSettings}
           className={`w-full py-2 text-left flex items-center gap-2 hover:bg-gray-200 transition ${
