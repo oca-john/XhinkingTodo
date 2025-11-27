@@ -1,10 +1,10 @@
 # XhinkingTodo
 
-一个现代化的桌面待办事项应用，基于 Tauri + Rust + React 构建。
-
 ![Version](https://img.shields.io/badge/version-1.0.2-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux-lightgrey.svg)
+
+一个现代化的桌面待办事项应用，基于 Tauri + Rust + React 构建。
 
 ## ✨ 功能特性
 
