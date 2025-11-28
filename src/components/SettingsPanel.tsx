@@ -36,10 +36,24 @@ const languageOptions = [
 
 function SettingsPanel({ settings, onUpdateSettings, sidebarCollapsed = false }: SettingsPanelProps) {
   const language = settings.language;
-  const [osType, setOsType] = useState<string>("Windows_NT");
+  const [osType, setOsType] = useState<string>("");
 
   useEffect(() => {
-    os.type().then(setOsType).catch(() => setOsType("Windows_NT"));
+    const detectOS = async () => {
+      try {
+        const type = await os.type();
+        setOsType(type);
+      } catch {
+        // Fallback: try platform detection
+        try {
+          const platform = await os.platform();
+          setOsType(platform === "linux" ? "Linux" : "Windows_NT");
+        } catch {
+          setOsType("Windows_NT");
+        }
+      }
+    };
+    detectOS();
   }, []);
 
   const getDataLocationPath = () => {
