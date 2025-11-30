@@ -77,14 +77,16 @@ npm run tauri:dev
 ### 生产构建
 
 ```bash
-# 构建生产版本
+# Windows 构建
 npm run tauri:build
+
+# Linux 构建 (生成 deb, rpm, tar.gz)
+npm run package:linux
 ```
 
 构建产物位置：
 - Windows: `src-tauri/target/release/bundle/msi/` 和 `nsis/`
-- Linux (RPM): `src-tauri/target/release/bundle/rpm/` (openSUSE/Fedora/RHEL)
-- Linux (通用): `src-tauri/target/release/bundle/appimage/` (AppImage)
+- Linux: `release/linux/` (包含 .deb, .rpm, .tar.gz)
 
 ### 自动化发布
 
@@ -93,15 +95,15 @@ npm run tauri:build
 **自动触发**：
 - 推送版本标签（如 `v-1.0.0`）自动构建并发布
 - 生成 Windows/Linux 双平台安装包
-- Linux 生成 `.rpm`（openSUSE/Fedora）、.deb （Debian, Ubuntu）和 `.AppImage`（通用）等格式
+- Linux 生成 `.rpm`（openSUSE/Fedora）、.deb （Debian, Ubuntu）和 `.tar.gz`（通用）等格式
 
 **Linux 发行版支持**：
 - 🥇 首要支持：openSUSE (.rpm)
 - 🥈 次要支持：Fedora (.rpm), Debian (.deb), Ubuntu (.deb)
-- ⚙️ 通用支持：其他发行版使用 AppImage
+- ⚙️ 通用支持：其他发行版使用 tar.gz
 
 **构建优化**：
-- RPM 包使用 `opensuse/tumbleweed` 容器构建，确保在 openSUSE 上最佳表现
+- RPM 包使用 `opensuse/tumbleweed` 发行版本地构建，确保在 openSUSE 上最佳表现
 
 - 所有构建任务并行执行，约 12-15 分钟完成
 

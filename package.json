@@ -11,7 +11,10 @@
     "tauri": "tauri",
     "tauri:dev": "npm run sync-version && tauri dev",
     "tauri:build": "npm run sync-version && tauri build",
-    "sync-version": "node scripts/sync-version.cjs"
+    "sync-version": "node scripts/sync-version.cjs",
+    "package": "node scripts/package.cjs",
+    "package:win": "powershell -ExecutionPolicy Bypass -File scripts/build.ps1",
+    "package:linux": "bash scripts/build.sh"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

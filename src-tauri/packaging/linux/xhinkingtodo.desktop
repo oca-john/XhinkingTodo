@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=XhinkingTodo
+Comment=A modern desktop todo application
+Exec=xhinkingtodo
+Icon=xhinkingtodo
+Terminal=false
+Type=Application
+Categories=Office;TextEditor;Utility;
+Keywords=todo;task;productivity;
+StartupWMClass=xhinkingtodo

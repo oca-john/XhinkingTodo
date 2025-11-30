@@ -44,9 +44,7 @@
       "targets": [
         "deb",
         "rpm",
-        "appimage",
-        "nsis",
-        "msi"
+        "updater"
       ],
       "identifier": "com.xhinking.todo",
       "icon": [
@@ -57,7 +55,8 @@
         "icons/icon.ico",
         "icons/icon.png"
       ],
-      "category": "Utility",
+      "resources": [],
+      "category": null,
       "shortDescription": "A modern desktop todo application",
       "longDescription": "XhinkingTodo is a modern, beautiful desktop todo application built with Tauri and Rust. It helps you manage your daily tasks efficiently.",
       "deb": {
@@ -67,10 +66,31 @@
           "libayatana-appindicator3-1"
         ],
         "section": "utils",
-        "priority": "optional"
+        "priority": "optional",
+        "desktopTemplate": "packaging/linux/xhinkingtodo.desktop"
       },
-      "appimage": {
-        "bundleMediaFramework": false
+      "rpm": {
+        "depends": [
+          "webkit2gtk3",
+          "gtk3",
+          "libappindicator-gtk3"
+        ]
+      },
+      "windows": {
+        "certificateThumbprint": null,
+        "digestAlgorithm": "sha256",
+        "timestampUrl": "",
+        "nsis": {
+          "installerIcon": "icons/icon.ico",
+          "headerImage": null,
+          "sidebarImage": null,
+          "installMode": "currentUser",
+          "languages": [
+            "SimpChinese",
+            "English"
+          ],
+          "displayLanguageSelector": true
+        }
       }
     },
     "security": {
