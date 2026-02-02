@@ -6,6 +6,61 @@
 
 一个现代化的桌面待办事项应用，基于 Tauri + Rust + React 构建。
 
+## Preview
+
+<table border="0">
+  <tr>
+    <td align="center" valign="bottom">
+      <a href="./src/images/1.create-todos-wd.png">
+        <img src="./src/images/1.create-todos-wd.png" width="300">
+      </a>
+      <br>
+      <p align="center">创建待办（宽导航）</p>
+    </td>
+    <td align="center" valign="bottom">
+      <a href="./src/images/2.todo-list-wd.png">
+        <img src="./src/images/2.todo-list-wd.png" width="300">
+      </a>
+      <br>
+      <p align="center">待办列表（宽导航）</p>
+    </td>
+    <td align="center" valign="bottom">
+      <a href="./src/images/3.todo-list-nr.png">
+        <img src="./src/images/3.todo-list-nr.png" width="300">
+      </a>
+      <br>
+      <p align="center">待办列表（窄导航）</p>
+    </td>
+  </tr>
+</table>
+
+
+<table border="0">
+  <tr>
+    <td align="center" valign="bottom">
+      <a href="./src/images/4.setting-yellow.png">
+        <img src="./src/images/4.setting-yellow.png" width="300">
+      </a>
+      <br>
+      <p align="center">设置面板（黄色主题）</p>
+    </td>
+    <td align="center" valign="bottom">
+      <a href="./src/images/5.setting-blue.png">
+        <img src="./src/images/5.setting-blue.png" width="300">
+      </a>
+      <br>
+      <p align="center">设置面板（蓝色主题）</p>
+    </td>
+    <td align="center" valign="bottom">
+      <a href="./src/images/6.setting-darkblue.png">
+        <img src="./src/images/6.setting-darkblue.png" width="300">
+      </a>
+      <br>
+      <p align="center">设置面板（暗蓝主题）</p>
+    </td>
+  </tr>
+</table>
+
 ## ✨ 功能特性
 
 ### 核心功能
